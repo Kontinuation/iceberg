@@ -242,6 +242,20 @@ class MessageTypeToType extends ParquetTypeVisitor<Type> {
     public Optional<Type> visit(LogicalTypeAnnotation.BsonLogicalTypeAnnotation bsonType) {
       return Optional.of(Types.BinaryType.get());
     }
+
+    @Override
+    public Optional<Type> visit(LogicalTypeAnnotation.GeometryLogicalTypeAnnotation geometryType) {
+      String crs = geometryType.getCrs();
+      return Optional.of(Types.GeometryType.of(crs));
+    }
+
+    @Override
+    public Optional<Type> visit(
+        LogicalTypeAnnotation.GeographyLogicalTypeAnnotation geographyType) {
+      String crs = geographyType.getCrs();
+      String algorithm = geographyType.getEdgeAlgorithm();
+      return Optional.of(Types.GeographyType.of(crs, algorithm));
+    }
   }
 
   private void addAlias(String name, int fieldId) {

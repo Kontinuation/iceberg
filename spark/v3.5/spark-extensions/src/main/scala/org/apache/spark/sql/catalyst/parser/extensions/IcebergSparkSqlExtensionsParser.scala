@@ -124,12 +124,17 @@ class IcebergSparkSqlExtensionsParser(delegate: ParserInterface) extends ParserI
     if (isIcebergCommand(sqlTextAfterSubstitution)) {
       parse(sqlTextAfterSubstitution) { parser => astBuilder.visit(parser.singleStatement()) }.asInstanceOf[LogicalPlan]
     } else {
-      RewriteViewCommands(SparkSession.active).apply(delegate.parsePlan(sqlText))
+      RewriteViewCommands(SparkSession.active).apply(
+        if (isDDLWithGeospatialColumnTypes(sqlText)) {
+          IcebergSparkSqlParser.parsePlan(sqlText)
+        } else {
+          delegate.parsePlan(sqlText)
+        })
     }
   }
 
-  private def isIcebergCommand(sqlText: String): Boolean = {
-    val normalized = sqlText.toLowerCase(Locale.ROOT).trim()
+  private def normalizedSql(sqlText: String): String =
+    sqlText.toLowerCase(Locale.ROOT).trim()
       // Strip simple SQL comments that terminate a line, e.g. comments starting with `--` .
       .replaceAll("--.*?\\n", " ")
       // Strip newlines.
@@ -141,7 +146,9 @@ class IcebergSparkSqlExtensionsParser(delegate: ParserInterface) extends ParserI
       .replaceAll("`", "")
       .trim()
 
-     isIcebergProcedure(normalized) || (
+  private def isIcebergCommand(sqlText: String): Boolean = {
+    val normalized = normalizedSql(sqlText)
+    isIcebergProcedure(normalized) || (
         normalized.startsWith("alter table") && (
             normalized.contains("add partition field") ||
             normalized.contains("drop partition field") ||
@@ -159,6 +166,17 @@ class IcebergSparkSqlExtensionsParser(delegate: ParserInterface) extends ParserI
   private def isIcebergProcedure(normalized: String): Boolean = {
     normalized.startsWith("call") &&
     SparkProcedures.names().asScala.map("system." + _).exists(normalized.contains)
+  }
+
+  private def isDDLWithGeospatialColumnTypes(sqlText: String): Boolean = {
+    val normalized = normalizedSql(sqlText)
+    val isDDL = normalized.startsWith("create table") ||
+      normalized.startsWith("create or replace table") ||
+      (normalized.startsWith("alter table") && (
+      normalized.contains("add column") ||
+        normalized.contains("alter column") ||
+        normalized.contains("replace column")))
+    isDDL && normalized.contains("geometry")
   }
 
   private def isSnapshotRefDdl(normalized: String): Boolean = {

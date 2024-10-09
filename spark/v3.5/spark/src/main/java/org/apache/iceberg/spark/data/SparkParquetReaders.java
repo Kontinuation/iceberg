@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.iceberg.MetadataColumns;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.parquet.ParquetGeometryValueReaders;
 import org.apache.iceberg.parquet.ParquetSchemaUtil;
 import org.apache.iceberg.parquet.ParquetValueReader;
 import org.apache.iceberg.parquet.ParquetValueReaders;
@@ -43,6 +44,7 @@ import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.relocated.com.google.common.collect.Maps;
 import org.apache.iceberg.spark.SparkUtil;
+import org.apache.iceberg.spark.geo.GeospatialLibraryAccessor;
 import org.apache.iceberg.types.Type.TypeID;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.util.UUIDUtil;
@@ -63,6 +65,7 @@ import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.unsafe.types.CalendarInterval;
 import org.apache.spark.unsafe.types.UTF8String;
+import org.locationtech.jts.geom.Geometry;
 
 public class SparkParquetReaders {
   private SparkParquetReaders() {}
@@ -235,6 +238,10 @@ public class SparkParquetReaders {
         org.apache.iceberg.types.Type.PrimitiveType expected, PrimitiveType primitive) {
       ColumnDescriptor desc = type.getColumnDescription(currentPath());
 
+      if (expected != null && expected.typeId() == TypeID.GEOMETRY) {
+        return new SparkGeometryReader(desc);
+      }
+
       if (primitive.getOriginalType() != null) {
         switch (primitive.getOriginalType()) {
           case ENUM:
@@ -389,6 +396,19 @@ public class SparkParquetReaders {
     @SuppressWarnings("ByteBufferBackingArray")
     public UTF8String read(UTF8String ignored) {
       return UTF8String.fromString(UUIDUtil.convert(column.nextBinary().toByteBuffer()).toString());
+    }
+  }
+
+  private static class SparkGeometryReader
+      extends ParquetValueReaders.DelegateValueReader<Object, Geometry> {
+    SparkGeometryReader(ColumnDescriptor desc) {
+      super(ParquetGeometryValueReaders.buildReader(desc));
+    }
+
+    @Override
+    public Object read(Object reuse) {
+      Geometry geom = delegate.read(null);
+      return GeospatialLibraryAccessor.fromJTS(geom);
     }
   }
 

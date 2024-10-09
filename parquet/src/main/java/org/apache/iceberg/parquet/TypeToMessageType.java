@@ -33,6 +33,8 @@ import org.apache.iceberg.types.Type.PrimitiveType;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types.DecimalType;
 import org.apache.iceberg.types.Types.FixedType;
+import org.apache.iceberg.types.Types.GeographyType;
+import org.apache.iceberg.types.Types.GeometryType;
 import org.apache.iceberg.types.Types.ListType;
 import org.apache.iceberg.types.Types.MapType;
 import org.apache.iceberg.types.Types.NestedField;
@@ -159,6 +161,20 @@ public class TypeToMessageType {
         return Types.primitive(BINARY, repetition).as(STRING).id(id).named(name);
       case BINARY:
         return Types.primitive(BINARY, repetition).id(id).named(name);
+      case GEOMETRY:
+        GeometryType geometryType = ((GeometryType) primitive);
+        return Types.primitive(BINARY, repetition)
+            .as(LogicalTypeAnnotation.geometryType(geometryType.crs(), null))
+            .id(id)
+            .named(name);
+      case GEOGRAPHY:
+        GeographyType geographyType = ((GeographyType) primitive);
+        return Types.primitive(BINARY, repetition)
+            .as(
+                LogicalTypeAnnotation.geographyType(
+                    geographyType.crs(), geographyType.algorithm().value(), null))
+            .id(id)
+            .named(name);
       case FIXED:
         FixedType fixed = (FixedType) primitive;
 

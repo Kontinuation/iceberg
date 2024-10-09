@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.iceberg.parquet.ParquetGeometryValueWriters;
 import org.apache.iceberg.parquet.ParquetValueReaders.ReusableEntry;
 import org.apache.iceberg.parquet.ParquetValueWriter;
 import org.apache.iceberg.parquet.ParquetValueWriters;
@@ -34,6 +35,7 @@ import org.apache.iceberg.parquet.ParquetValueWriters.RepeatedKeyValueWriter;
 import org.apache.iceberg.parquet.ParquetValueWriters.RepeatedWriter;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
+import org.apache.iceberg.spark.geo.GeospatialLibraryAccessor;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.util.DecimalUtil;
 import org.apache.iceberg.util.UUIDUtil;
@@ -57,6 +59,7 @@ import org.apache.spark.sql.types.ShortType;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.unsafe.types.UTF8String;
+import org.locationtech.jts.geom.Geometry;
 
 public class SparkParquetWriters {
   private SparkParquetWriters() {}
@@ -241,6 +244,12 @@ public class SparkParquetWriters {
       public Optional<ParquetValueWriter<?>> visit(
           LogicalTypeAnnotation.BsonLogicalTypeAnnotation bsonLogicalType) {
         return Optional.of(byteArrays(desc));
+      }
+
+      @Override
+      public Optional<ParquetValueWriter<?>> visit(
+          LogicalTypeAnnotation.GeometryLogicalTypeAnnotation geometryLogicalType) {
+        return Optional.of(new SparkGeometryWriter(desc));
       }
     }
 
@@ -437,6 +446,19 @@ public class SparkParquetWriters {
     @Override
     public void write(int repetitionLevel, byte[] bytes) {
       column.writeBinary(repetitionLevel, Binary.fromReusedByteArray(bytes));
+    }
+  }
+
+  private static class SparkGeometryWriter
+      extends ParquetValueWriters.DelegateParquetValueWriter<Object, Geometry> {
+    private SparkGeometryWriter(ColumnDescriptor desc) {
+      super(ParquetGeometryValueWriters.buildWriter(desc));
+    }
+
+    @Override
+    public void write(int repetitionLevel, Object data) {
+      Geometry geom = GeospatialLibraryAccessor.toJTS(data);
+      delegate.write(repetitionLevel, geom);
     }
   }
 
