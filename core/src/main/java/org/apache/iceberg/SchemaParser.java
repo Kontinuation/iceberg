@@ -43,6 +43,7 @@ public class SchemaParser {
   private static final String LIST = "list";
   private static final String MAP = "map";
   private static final String GEOMETRY = "geometry";
+  private static final String GEOGRAPHY = "geography";
   private static final String FIELDS = "fields";
   private static final String ELEMENT = "element";
   private static final String KEY = "key";
@@ -132,7 +133,13 @@ public class SchemaParser {
       generator.writeStartObject();
       generator.writeStringField("type", "geometry");
       generator.writeStringField("crs", geometryType.crs());
-      generator.writeStringField("edges", geometryType.edges().value());
+      generator.writeEndObject();
+    } else if (primitive.typeId() == Type.TypeID.GEOGRAPHY) {
+      Types.GeographyType geographyType = (Types.GeographyType) primitive;
+      generator.writeStartObject();
+      generator.writeStringField("type", "geography");
+      generator.writeStringField("crs", geographyType.crs());
+      generator.writeStringField("algorithm", geographyType.algorithm().name());
       generator.writeEndObject();
     } else {
       generator.writeString(primitive.toString());
@@ -189,6 +196,8 @@ public class SchemaParser {
           return mapFromJson(json);
         } else if (GEOMETRY.equals(type)) {
           return geometryFromJson(json);
+        } else if (GEOGRAPHY.equals(type)) {
+          return geographyFromJson(json);
         }
       }
     }
@@ -254,8 +263,13 @@ public class SchemaParser {
 
   private static Types.GeometryType geometryFromJson(JsonNode json) {
     String crs = JsonUtil.getString("crs", json);
-    String edges = JsonUtil.getString("edges", json);
-    return Types.GeometryType.of(crs, edges);
+    return Types.GeometryType.of(crs);
+  }
+
+  private static Types.GeographyType geographyFromJson(JsonNode json) {
+    String crs = JsonUtil.getString("crs", json);
+    String algorithm = JsonUtil.getString("algorithm", json);
+    return Types.GeographyType.of(crs, algorithm);
   }
 
   public static Schema fromJson(JsonNode json) {

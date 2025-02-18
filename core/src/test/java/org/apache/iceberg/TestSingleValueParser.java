@@ -57,11 +57,10 @@ public class TestSingleValueParser {
           {Types.GeometryType.get(), "\"POINT Z(1 2 3)\""},
           {Types.GeometryType.get(), "\"POINT M(1 2 3)\""},
           {Types.GeometryType.get(), "\"POINT ZM(1 2 3 4)\""},
+          {Types.GeometryType.of("srid:3857"), "\"POINT (1 2)\""},
+          {Types.GeographyType.get(), "\"POINT ZM(1 2 3 4)\""},
           {
-            Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL), "\"POINT (1 2)\""
-          },
-          {
-            Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL),
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY),
             "\"POINT ZM(1 2 3 4)\""
           },
           {Types.ListType.ofOptional(1, Types.IntegerType.get()), "[1, 2, 3]"},

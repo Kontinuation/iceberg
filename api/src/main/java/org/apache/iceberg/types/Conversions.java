@@ -29,6 +29,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.exceptions.RuntimeIOException;
 import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.util.UUIDUtil;
@@ -36,6 +37,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.CoordinateXYM;
 import org.locationtech.jts.geom.CoordinateXYZM;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 
@@ -126,17 +128,9 @@ public class Conversions {
       case DECIMAL:
         return ByteBuffer.wrap(((BigDecimal) value).unscaledValue().toByteArray());
       case GEOMETRY:
-        if (value instanceof Point) {
-          Coordinate coordinate = ((Point) value).getCoordinate();
-          return ByteBuffer.allocate(32)
-              .order(ByteOrder.LITTLE_ENDIAN)
-              .putDouble(0, coordinate.getX())
-              .putDouble(8, coordinate.getY())
-              .putDouble(16, coordinate.getZ())
-              .putDouble(24, coordinate.getM());
-        } else {
-          throw new IllegalArgumentException("Only point geometry can be converted to byte buffer");
-        }
+        return geometryToByteBuffer((Geometry) value);
+      case GEOGRAPHY:
+        return geometryToByteBuffer(((Geography) value).geometry());
       default:
         throw new UnsupportedOperationException("Cannot serialize type: " + typeId);
     }
@@ -198,14 +192,41 @@ public class Conversions {
         tmp.get(unscaledBytes);
         return new BigDecimal(new BigInteger(unscaledBytes), decimal.scale());
       case GEOMETRY:
-        Coordinate coordinate = getCoordinate(tmp);
-        return FACTORY.createPoint(coordinate);
+      case GEOGRAPHY:
+        Coordinate coordinate = coordinateFromByteBuffer(tmp);
+        Geometry geometry = FACTORY.createPoint(coordinate);
+        if (type.typeId() == Type.TypeID.GEOMETRY) {
+          return geometry;
+        } else {
+          return new Geography(geometry);
+        }
       default:
         throw new UnsupportedOperationException("Cannot deserialize type: " + type);
     }
   }
 
-  private static Coordinate getCoordinate(ByteBuffer tmp) {
+  private static ByteBuffer geometryToByteBuffer(Geometry value) {
+    if (value instanceof Point) {
+      Coordinate coordinate = value.getCoordinate();
+      return coordinateToByteBuffer(coordinate);
+    } else {
+      throw new IllegalArgumentException("Only point geometry can be converted to byte buffer");
+    }
+  }
+
+  private static ByteBuffer coordinateToByteBuffer(Coordinate coordinate) {
+    // The getZ() and getM() for a coordinate will return NaN if the value is not set.
+    // This is conformant with the Bound Serialization spec.
+    // See https://iceberg.apache.org/spec/#bound-serialization
+    return ByteBuffer.allocate(32)
+        .order(ByteOrder.LITTLE_ENDIAN)
+        .putDouble(0, coordinate.getX())
+        .putDouble(8, coordinate.getY())
+        .putDouble(16, coordinate.getZ())
+        .putDouble(24, coordinate.getM());
+  }
+
+  private static Coordinate coordinateFromByteBuffer(ByteBuffer tmp) {
     double coordX = tmp.getDouble(0);
     double coordY = tmp.getDouble(8);
     double coordZ = tmp.getDouble(16);

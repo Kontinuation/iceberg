@@ -57,7 +57,8 @@ public class Schema implements Serializable {
   private static final Map<Type.TypeID, Integer> MIN_FORMAT_VERSIONS =
       ImmutableMap.of(
           Type.TypeID.TIMESTAMP_NANO, 3,
-          Type.TypeID.GEOMETRY, 3);
+          Type.TypeID.GEOMETRY, 3,
+          Type.TypeID.GEOGRAPHY, 3);
 
   private final StructType struct;
   private final int schemaId;

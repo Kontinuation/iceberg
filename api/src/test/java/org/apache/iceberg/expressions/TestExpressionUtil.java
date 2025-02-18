@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
@@ -51,7 +52,8 @@ public class TestExpressionUtil {
           Types.NestedField.optional(8, "data", Types.StringType.get()),
           Types.NestedField.optional(9, "measurement", Types.DoubleType.get()),
           Types.NestedField.optional(10, "test", Types.IntegerType.get()),
-          Types.NestedField.optional(11, "geom", Types.GeometryType.get()));
+          Types.NestedField.optional(11, "geom", Types.GeometryType.get()),
+          Types.NestedField.optional(12, "geog", Types.GeographyType.get()));
 
   private static final Types.StructType STRUCT = SCHEMA.asStruct();
 
@@ -802,38 +804,67 @@ public class TestExpressionUtil {
 
   @Test
   public void testSanitizeSpatialPredicates() {
-    Pattern filterPattern = Pattern.compile("^g (\\w+) \\(geometry\\)$");
+    Pattern geometryFilterPattern = Pattern.compile("^g (\\w+) \\(geometry\\)$");
+    Pattern geographyFilterPattern = Pattern.compile("^g (\\w+) \\(geography\\)$");
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
+    Geography queryGeography = new Geography(factory.toGeometry(new Envelope(0, 1, 0, 1)));
     Geometry emptyGeometry = factory.createPoint();
+    Geography emptyGeography = new Geography(factory.createPoint());
 
     assertEquals(
         ExpressionUtil.sanitize(Expressions.stIntersects("g", queryWindow)),
         ExpressionUtil.sanitize(Expressions.stIntersects("g", emptyGeometry)));
     String sanitizedFilter =
         ExpressionUtil.toSanitizedString(Expressions.stIntersects("g", queryWindow));
-    assertThat(filterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(geometryFilterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(sanitizedFilter).contains("ST_INTERSECTS");
+    assertEquals(
+        ExpressionUtil.sanitize(Expressions.stIntersects("g", queryGeography)),
+        ExpressionUtil.sanitize(Expressions.stIntersects("g", emptyGeography)));
+    sanitizedFilter =
+        ExpressionUtil.toSanitizedString(Expressions.stIntersects("g", queryGeography));
+    assertThat(geographyFilterPattern.matcher(sanitizedFilter)).matches();
     assertThat(sanitizedFilter).contains("ST_INTERSECTS");
 
     assertEquals(
         ExpressionUtil.sanitize(Expressions.stCovers("g", queryWindow)),
         ExpressionUtil.sanitize(Expressions.stCovers("g", emptyGeometry)));
     sanitizedFilter = ExpressionUtil.toSanitizedString(Expressions.stCovers("g", queryWindow));
-    assertThat(filterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(geometryFilterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(sanitizedFilter).contains("ST_COVERS");
+    assertEquals(
+        ExpressionUtil.sanitize(Expressions.stCovers("g", queryGeography)),
+        ExpressionUtil.sanitize(Expressions.stCovers("g", emptyGeography)));
+    sanitizedFilter = ExpressionUtil.toSanitizedString(Expressions.stCovers("g", queryGeography));
+    assertThat(geographyFilterPattern.matcher(sanitizedFilter)).matches();
     assertThat(sanitizedFilter).contains("ST_COVERS");
 
     assertEquals(
         ExpressionUtil.sanitize(Expressions.stDisjoint("g", queryWindow)),
         ExpressionUtil.sanitize(Expressions.stDisjoint("g", emptyGeometry)));
     sanitizedFilter = ExpressionUtil.toSanitizedString(Expressions.stDisjoint("g", queryWindow));
-    assertThat(filterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(geometryFilterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(sanitizedFilter).contains("ST_DISJOINT");
+    assertEquals(
+        ExpressionUtil.sanitize(Expressions.stDisjoint("g", queryGeography)),
+        ExpressionUtil.sanitize(Expressions.stDisjoint("g", emptyGeography)));
+    sanitizedFilter = ExpressionUtil.toSanitizedString(Expressions.stDisjoint("g", queryGeography));
+    assertThat(geographyFilterPattern.matcher(sanitizedFilter)).matches();
     assertThat(sanitizedFilter).contains("ST_DISJOINT");
 
     assertEquals(
         ExpressionUtil.sanitize(Expressions.stNotCovers("g", queryWindow)),
         ExpressionUtil.sanitize(Expressions.stNotCovers("g", emptyGeometry)));
     sanitizedFilter = ExpressionUtil.toSanitizedString(Expressions.stNotCovers("g", queryWindow));
-    assertThat(filterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(geometryFilterPattern.matcher(sanitizedFilter)).matches();
+    assertThat(sanitizedFilter).contains("ST_NOT_COVERS");
+    assertEquals(
+        ExpressionUtil.sanitize(Expressions.stNotCovers("g", queryGeography)),
+        ExpressionUtil.sanitize(Expressions.stNotCovers("g", emptyGeography)));
+    sanitizedFilter =
+        ExpressionUtil.toSanitizedString(Expressions.stNotCovers("g", queryGeography));
+    assertThat(geographyFilterPattern.matcher(sanitizedFilter)).matches();
     assertThat(sanitizedFilter).contains("ST_NOT_COVERS");
   }
 
@@ -860,6 +891,13 @@ public class TestExpressionUtil {
           Expressions.stCovers("geom", factory.toGeometry(new Envelope(0, 1, 0, 1))),
           Expressions.stDisjoint("geom", factory.toGeometry(new Envelope(0, 1, 0, 1))),
           Expressions.stNotCovers("geom", factory.toGeometry(new Envelope(0, 1, 0, 1))),
+          Expressions.stIntersects(
+              "geog", new Geography(factory.toGeometry(new Envelope(0, 1, 0, 1)))),
+          Expressions.stCovers("geog", new Geography(factory.toGeometry(new Envelope(0, 1, 0, 1)))),
+          Expressions.stDisjoint(
+              "geog", new Geography(factory.toGeometry(new Envelope(0, 1, 0, 1)))),
+          Expressions.stNotCovers(
+              "geog", new Geography(factory.toGeometry(new Envelope(0, 1, 0, 1)))),
           Expressions.alwaysTrue(),
           Expressions.alwaysFalse(),
           Expressions.and(Expressions.lessThan("id", 5), Expressions.notNull("data")),

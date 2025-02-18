@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.avro.util.Utf8;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.TestHelpers;
 import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.types.Types;
@@ -823,6 +824,7 @@ public class TestEvaluator {
     StructType struct = StructType.of(required(24, "g", Types.GeometryType.get()));
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
+    Geography queryWindowGeography = new Geography(queryWindow);
     Evaluator evaluator = new Evaluator(struct, stIntersects("g", queryWindow));
 
     assertThat(evaluator.eval(TestHelpers.Row.of(factory.createPoint(new Coordinate(0.5, 0.5)))))
@@ -837,6 +839,28 @@ public class TestEvaluator {
     assertThat(evaluator.eval(TestHelpers.Row.of((Geometry) null)))
         .as("null does not intersect with the query window")
         .isFalse();
+
+    struct = StructType.of(required(24, "g", Types.GeographyType.get()));
+    Evaluator geographyEvaluator = new Evaluator(struct, stIntersects("g", queryWindowGeography));
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(0.5, 0.5))))))
+        .as("Geography point intersects with the query window")
+        .isTrue();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(2, 2))))))
+        .as("Geography point does not intersect with the query window")
+        .isFalse();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(
+                    new Geography(factory.toGeometry(new Envelope(0.5, 2, 0.5, 2))))))
+        .as("Envelope intersects with the query window")
+        .isTrue();
+    assertThat(geographyEvaluator.eval(TestHelpers.Row.of((Geography) null)))
+        .as("null does not intersect with the query window")
+        .isFalse();
   }
 
   @Test
@@ -844,8 +868,10 @@ public class TestEvaluator {
     StructType struct = StructType.of(required(24, "g", Types.GeometryType.get()));
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
-    Evaluator evaluator = new Evaluator(struct, stCovers("g", queryWindow));
+    Geography queryWindowGeography = new Geography(queryWindow);
 
+    // Test geometry type
+    Evaluator evaluator = new Evaluator(struct, stCovers("g", queryWindow));
     assertThat(evaluator.eval(TestHelpers.Row.of(factory.createPoint(new Coordinate(0.5, 0.5)))))
         .as("Point does not cover the query window")
         .isFalse();
@@ -858,15 +884,40 @@ public class TestEvaluator {
     assertThat(evaluator.eval(TestHelpers.Row.of((Geometry) null)))
         .as("null does not cover the query window")
         .isFalse();
+
+    // Test geography type
+    struct = StructType.of(required(24, "g", Types.GeographyType.get()));
+    Evaluator geographyEvaluator = new Evaluator(struct, stCovers("g", queryWindowGeography));
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(0.5, 0.5))))))
+        .as("Geography point does not cover the query window")
+        .isFalse();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(
+                    new Geography(factory.toGeometry(new Envelope(0.5, 2, 0.5, 2))))))
+        .as("Geography envelope does not cover the query window")
+        .isFalse();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.toGeometry(new Envelope(0, 2, 0, 2))))))
+        .as("Geography envelope covers the query window")
+        .isTrue();
+    assertThat(geographyEvaluator.eval(TestHelpers.Row.of((Geography) null)))
+        .as("null does not cover the query window")
+        .isFalse();
   }
 
   @Test
-  public void testDisjoint() {
+  public void testStDisjoint() {
     StructType struct = StructType.of(required(24, "g", Types.GeometryType.get()));
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
-    Evaluator evaluator = new Evaluator(struct, stDisjoint("g", queryWindow));
+    Geography queryWindowGeography = new Geography(queryWindow);
 
+    // Test geometry type
+    Evaluator evaluator = new Evaluator(struct, stDisjoint("g", queryWindow));
     assertThat(evaluator.eval(TestHelpers.Row.of(factory.createPoint(new Coordinate(0.5, 0.5)))))
         .as("Point intersects with the query window")
         .isFalse();
@@ -879,6 +930,29 @@ public class TestEvaluator {
     assertThat(evaluator.eval(TestHelpers.Row.of((Geometry) null)))
         .as("null disjoint with the query window")
         .isTrue();
+
+    // Test geography type
+    struct = StructType.of(required(24, "g", Types.GeographyType.get()));
+    Evaluator geographyEvaluator = new Evaluator(struct, stDisjoint("g", queryWindowGeography));
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(0.5, 0.5))))))
+        .as("Geography point intersects with the query window")
+        .isFalse();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(2, 2))))))
+        .as("Geography point disjoint with the query window")
+        .isTrue();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(
+                    new Geography(factory.toGeometry(new Envelope(0.5, 2, 0.5, 2))))))
+        .as("Geography envelope intersects with the query window")
+        .isFalse();
+    assertThat(geographyEvaluator.eval(TestHelpers.Row.of((Geography) null)))
+        .as("null disjoint with the query window")
+        .isTrue();
   }
 
   @Test
@@ -886,8 +960,10 @@ public class TestEvaluator {
     StructType struct = StructType.of(required(24, "g", Types.GeometryType.get()));
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
-    Evaluator evaluator = new Evaluator(struct, stNotCovers("g", queryWindow));
+    Geography queryWindowGeography = new Geography(queryWindow);
 
+    // Test geometry type
+    Evaluator evaluator = new Evaluator(struct, stNotCovers("g", queryWindow));
     assertThat(evaluator.eval(TestHelpers.Row.of(factory.createPoint(new Coordinate(0.5, 0.5)))))
         .as("Point does not cover the query window")
         .isTrue();
@@ -898,6 +974,29 @@ public class TestEvaluator {
         .as("Envelope covers the query window")
         .isFalse();
     assertThat(evaluator.eval(TestHelpers.Row.of((Geometry) null)))
+        .as("null does not cover the query window")
+        .isTrue();
+
+    // Test geography type
+    struct = StructType.of(required(24, "g", Types.GeographyType.get()));
+    Evaluator geographyEvaluator = new Evaluator(struct, stNotCovers("g", queryWindowGeography));
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.createPoint(new Coordinate(0.5, 0.5))))))
+        .as("Geography point does not cover the query window")
+        .isTrue();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(
+                    new Geography(factory.toGeometry(new Envelope(0.5, 2, 0.5, 2))))))
+        .as("Geography envelope does not cover the query window")
+        .isTrue();
+    assertThat(
+            geographyEvaluator.eval(
+                TestHelpers.Row.of(new Geography(factory.toGeometry(new Envelope(0, 2, 0, 2))))))
+        .as("Geography envelope covers the query window")
+        .isFalse();
+    assertThat(geographyEvaluator.eval(TestHelpers.Row.of((Geography) null)))
         .as("null does not cover the query window")
         .isTrue();
   }

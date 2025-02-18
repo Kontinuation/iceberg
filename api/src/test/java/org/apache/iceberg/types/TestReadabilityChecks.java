@@ -23,6 +23,7 @@ import static org.apache.iceberg.types.Types.NestedField.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.Type.PrimitiveType;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,10 @@ public class TestReadabilityChecks {
         Types.DecimalType.of(11, 2),
         Types.DecimalType.of(9, 3),
         Types.GeometryType.get(),
-        Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL)
+        Types.GeometryType.of("srid:3857"),
+        Types.GeographyType.get(),
+        Types.GeographyType.of("srid:3857"),
+        Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY),
       };
 
   @Test

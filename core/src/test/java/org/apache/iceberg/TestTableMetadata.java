@@ -1688,34 +1688,40 @@ public class TestTableMetadata {
 
   @Test
   public void testV3GeometryTypeSupport() {
-    Schema v3Schema =
+    Schema v3SchemaGeom =
         new Schema(
             Types.NestedField.required(3, "id", Types.LongType.get()),
             Types.NestedField.required(4, "geom", Types.GeometryType.get()));
+    Schema v3SchemaGeog =
+        new Schema(
+            Types.NestedField.required(3, "id", Types.LongType.get()),
+            Types.NestedField.required(4, "geog", Types.GeographyType.get()));
 
-    for (int unsupportedFormatVersion : ImmutableList.of(1, 2)) {
-      assertThatThrownBy(
-              () ->
-                  TableMetadata.newTableMetadata(
-                      v3Schema,
-                      PartitionSpec.unpartitioned(),
-                      SortOrder.unsorted(),
-                      TEST_LOCATION,
-                      ImmutableMap.of(),
-                      unsupportedFormatVersion))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageMatching(
-              "Invalid type in v\\d schema: geom geometry.* is not supported until v3");
+    for (Schema schema : ImmutableList.of(v3SchemaGeom, v3SchemaGeog)) {
+      for (int unsupportedFormatVersion : ImmutableList.of(1, 2)) {
+        assertThatThrownBy(
+                () ->
+                    TableMetadata.newTableMetadata(
+                        schema,
+                        PartitionSpec.unpartitioned(),
+                        SortOrder.unsorted(),
+                        TEST_LOCATION,
+                        ImmutableMap.of(),
+                        unsupportedFormatVersion))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageMatching(
+                "Invalid type in v\\d schema: (geom|geog) (geometry|geography)(\\(.*\\))? is not supported until v3");
+      }
+
+      // should be allowed in v3
+      TableMetadata.newTableMetadata(
+          schema,
+          PartitionSpec.unpartitioned(),
+          SortOrder.unsorted(),
+          TEST_LOCATION,
+          ImmutableMap.of(),
+          3);
     }
-
-    // should be allowed in v3
-    TableMetadata.newTableMetadata(
-        v3Schema,
-        PartitionSpec.unpartitioned(),
-        SortOrder.unsorted(),
-        TEST_LOCATION,
-        ImmutableMap.of(),
-        3);
   }
 
   @Test

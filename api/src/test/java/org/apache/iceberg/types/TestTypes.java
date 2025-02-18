@@ -21,6 +21,7 @@ package org.apache.iceberg.types;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import org.apache.iceberg.Geography;
 import org.junit.jupiter.api.Test;
 
 public class TestTypes {
@@ -49,16 +50,47 @@ public class TestTypes {
 
     assertThat(Types.fromPrimitiveString("geometry")).isEqualTo(Types.GeometryType.get());
     assertThat(Types.fromPrimitiveString("geometry()")).isEqualTo(Types.GeometryType.get());
-    assertThat(Types.fromPrimitiveString("geometry(test:crs)"))
-        .isEqualTo(Types.GeometryType.of("test:crs"));
-    assertThat(Types.fromPrimitiveString("geometry(test:crs, spherical)"))
-        .isEqualTo(Types.GeometryType.of("test:crs", Types.GeometryType.Edges.SPHERICAL));
-    assertThat(Types.fromPrimitiveString("geometry(test:crs, planar)"))
-        .isEqualTo(Types.GeometryType.of("test:crs", Types.GeometryType.Edges.PLANAR));
+    assertThat(Types.fromPrimitiveString("geometry(srid:3857)"))
+        .isEqualTo(Types.GeometryType.of("srid:3857"));
+    assertThat(Types.fromPrimitiveString("geometry( srid:3857 )"))
+        .isEqualTo(Types.GeometryType.of("srid:3857"));
+
+    assertThat(Types.fromPrimitiveString("geography")).isEqualTo(Types.GeographyType.get());
+    assertThat(Types.fromPrimitiveString("geography()")).isEqualTo(Types.GeographyType.get());
+    assertThat(Types.fromPrimitiveString("geography(srid:3857)"))
+        .isEqualTo(Types.GeographyType.of("srid:3857"));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857, spherical)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.SPHERICAL));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857, vincenty)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.VINCENTY));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857, thomas)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.THOMAS));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857, andoyer)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.ANDOYER));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857, karney)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY));
 
     assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> Types.fromPrimitiveString("geometry(test:crs, BadEdgeName)"))
-        .withMessageContaining("Invalid edges name")
-        .withMessageContaining("BadEdgeName");
+        .isThrownBy(() -> Types.fromPrimitiveString("geography(srid:3857, BadAlgorithm)"))
+        .withMessageContaining("Invalid edge interpolation algorithm name")
+        .withMessageContaining("BadAlgorithm");
+
+    // Test geography type with various spacing
+    assertThat(Types.fromPrimitiveString("geography( srid:3857 )"))
+        .isEqualTo(Types.GeographyType.of("srid:3857"));
+    assertThat(Types.fromPrimitiveString("geography( srid:3857 , spherical )"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.SPHERICAL));
+    assertThat(Types.fromPrimitiveString("geography(srid:3857,vincenty)"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.VINCENTY));
+    assertThat(Types.fromPrimitiveString("geography( srid:3857  ,  karney  )"))
+        .isEqualTo(
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY));
   }
 }

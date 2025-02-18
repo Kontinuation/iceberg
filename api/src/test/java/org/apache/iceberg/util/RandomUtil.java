@@ -151,6 +151,7 @@ public class RandomUtil {
         return negate(choice) ? bigDecimal.negate() : bigDecimal;
 
       case GEOMETRY:
+      case GEOGRAPHY:
         Point geometry =
             GEOMETRY_FACTORY.createPoint(new Coordinate(random.nextDouble(), random.nextDouble()));
         byte[] wkb = GeometryUtil.toWKB(geometry);

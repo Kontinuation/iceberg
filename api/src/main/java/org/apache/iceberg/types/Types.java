@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.relocated.com.google.common.base.Joiner;
@@ -59,7 +60,9 @@ public class Types {
 
   private static final Pattern FIXED = Pattern.compile("fixed\\[\\s*(\\d+)\\s*\\]");
   private static final Pattern GEOMETRY_PARAMETERS =
-      Pattern.compile("(?:\\(\\s*([^,]+)?\\s*(?:,\\s*(\\w+)\\s*)?\\))?");
+      Pattern.compile("(?:\\(\\s*([^, ]+)?\\s*\\))?");
+  private static final Pattern GEOGRAPHY_PARAMETERS =
+      Pattern.compile("(?:\\(\\s*([^, ]+)?\\s*(?:,\\s*(\\w+)\\s*)?\\))?");
   private static final Pattern DECIMAL =
       Pattern.compile("decimal\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)");
 
@@ -72,7 +75,14 @@ public class Types {
     if (lowerTypeString.startsWith("geometry")) {
       Matcher geometry = GEOMETRY_PARAMETERS.matcher(typeString.substring(8));
       if (geometry.matches()) {
-        return GeometryType.of(geometry.group(1), geometry.group(2));
+        return GeometryType.of(geometry.group(1));
+      }
+    }
+
+    if (lowerTypeString.startsWith("geography")) {
+      Matcher geography = GEOGRAPHY_PARAMETERS.matcher(typeString.substring(9));
+      if (geography.matches()) {
+        return GeographyType.of(geography.group(1), geography.group(2));
       }
     }
 
@@ -479,38 +489,12 @@ public class Types {
 
   public static class GeometryType extends PrimitiveType {
 
-    public enum Edges {
-      PLANAR("planar"),
-      SPHERICAL("spherical");
-
-      private final String value;
-
-      Edges(String value) {
-        this.value = value;
-      }
-
-      public String value() {
-        return value;
-      }
-
-      public static Edges fromName(String edgesName) {
-        try {
-          return Edges.valueOf(edgesName.toUpperCase(Locale.ENGLISH));
-        } catch (IllegalArgumentException e) {
-          throw new IllegalArgumentException(String.format("Invalid edges name: %s", edgesName), e);
-        }
-      }
-    }
-
     public static final String DEFAULT_CRS = "OGC:CRS84";
-    public static final Edges DEFAULT_EDGES = Edges.PLANAR;
 
     private final String crs;
-    private final Edges edges;
 
-    private GeometryType(String crs, Edges edges) {
+    private GeometryType(String crs) {
       this.crs = crs;
-      this.edges = edges;
     }
 
     public static GeometryType get() {
@@ -518,16 +502,7 @@ public class Types {
     }
 
     public static GeometryType of(String crs) {
-      return of(crs, DEFAULT_EDGES);
-    }
-
-    public static GeometryType of(String crs, Edges edges) {
-      return new GeometryType(crs, edges);
-    }
-
-    public static GeometryType of(String crs, String edgesName) {
-      Edges edges = (edgesName == null ? DEFAULT_EDGES : Edges.fromName(edgesName));
-      return new GeometryType(crs == null ? DEFAULT_CRS : crs, edges);
+      return new GeometryType(crs == null ? DEFAULT_CRS : crs);
     }
 
     @Override
@@ -539,10 +514,6 @@ public class Types {
       return crs;
     }
 
-    public Edges edges() {
-      return edges;
-    }
-
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -552,17 +523,87 @@ public class Types {
       }
 
       GeometryType that = (GeometryType) o;
-      return crs.equals(that.crs) && edges.equals(that.edges);
+      return crs.equals(that.crs);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(GeometryType.class, crs, edges);
+      return Objects.hash(GeometryType.class, crs);
     }
 
     @Override
     public String toString() {
-      return String.format("geometry(%s, %s)", crs, edges.value());
+      return String.format("geometry(%s)", crs);
+    }
+  }
+
+  public static class GeographyType extends PrimitiveType {
+
+    public static final String DEFAULT_CRS = "OGC:CRS84";
+    public static final Geography.EdgeInterpolationAlgorithm DEFAULT_ALGORITHM =
+        Geography.EdgeInterpolationAlgorithm.SPHERICAL;
+
+    private final String crs;
+    private final Geography.EdgeInterpolationAlgorithm algorithm;
+
+    private GeographyType(String crs, Geography.EdgeInterpolationAlgorithm algorithm) {
+      this.crs = crs;
+      this.algorithm = algorithm;
+    }
+
+    public static GeographyType get() {
+      return of(DEFAULT_CRS);
+    }
+
+    public static GeographyType of(String crs) {
+      return of(crs, DEFAULT_ALGORITHM);
+    }
+
+    public static GeographyType of(String crs, Geography.EdgeInterpolationAlgorithm algorithm) {
+      return new GeographyType(crs, algorithm);
+    }
+
+    public static GeographyType of(String crs, String algorithmName) {
+      Geography.EdgeInterpolationAlgorithm algorithm =
+          (algorithmName == null
+              ? DEFAULT_ALGORITHM
+              : Geography.EdgeInterpolationAlgorithm.fromName(algorithmName));
+      return new GeographyType(crs == null ? DEFAULT_CRS : crs, algorithm);
+    }
+
+    @Override
+    public TypeID typeId() {
+      return TypeID.GEOGRAPHY;
+    }
+
+    public String crs() {
+      return crs;
+    }
+
+    public Geography.EdgeInterpolationAlgorithm algorithm() {
+      return algorithm;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      } else if (!(o instanceof GeographyType)) {
+        return false;
+      }
+
+      GeographyType that = (GeographyType) o;
+      return crs.equals(that.crs) && algorithm.equals(that.algorithm);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(GeographyType.class, crs, algorithm);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("geography(%s, %s)", crs, algorithm.value());
     }
   }
 

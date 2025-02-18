@@ -728,7 +728,7 @@ public class ArrowReaderTest {
             Types.NestedField.optional(
                 29,
                 "geometry_nullable",
-                Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL)));
+                Types.GeometryType.of("srid:3857", Types.GeometryType.Edges.SPHERICAL)));
 
     PartitionSpec spec = PartitionSpec.builderFor(schema).month("timestamp").build();
 

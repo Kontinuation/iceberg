@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TestHelpers.Row;
 import org.apache.iceberg.TestHelpers.TestDataFile;
@@ -79,7 +80,9 @@ public class TestInclusiveMetricsEvaluator {
           optional(13, "no_nan_stats", Types.DoubleType.get()),
           optional(14, "some_empty", Types.StringType.get()),
           optional(15, "geom", Types.GeometryType.get()),
-          optional(16, "all_nulls_geom", Types.GeometryType.get()));
+          optional(16, "all_nulls_geom", Types.GeometryType.get()),
+          optional(17, "geog", Types.GeographyType.get()),
+          optional(18, "all_nulls_geog", Types.GeographyType.get()));
 
   private static final int INT_MIN_VALUE = 30;
   private static final int INT_MAX_VALUE = 79;
@@ -187,19 +190,37 @@ public class TestInclusiveMetricsEvaluator {
           Row.of(),
           50,
           // any value counts, including nulls
-          ImmutableMap.<Integer, Long>builder().put(15, 20L).put(16, 20L).buildOrThrow(),
+          ImmutableMap.<Integer, Long>builder()
+              .put(15, 20L)
+              .put(16, 20L)
+              .put(17, 20L)
+              .put(18, 20L)
+              .buildOrThrow(),
           // null value counts
-          ImmutableMap.<Integer, Long>builder().put(15, 2L).put(16, 20L).buildOrThrow(),
+          ImmutableMap.<Integer, Long>builder()
+              .put(15, 2L)
+              .put(16, 20L)
+              .put(17, 2L)
+              .put(18, 20L)
+              .buildOrThrow(),
           // nan value counts
           null,
           // lower bounds
           ImmutableMap.of(
               15,
-              toByteBuffer(Types.GeometryType.get(), FACTORY.createPoint(new Coordinate(1, 2)))),
+              toByteBuffer(Types.GeometryType.get(), FACTORY.createPoint(new Coordinate(1, 2))),
+              17,
+              toByteBuffer(
+                  Types.GeographyType.get(),
+                  new Geography(FACTORY.createPoint(new Coordinate(1, 2))))),
           // upper bounds
           ImmutableMap.of(
               15,
-              toByteBuffer(Types.GeometryType.get(), FACTORY.createPoint(new Coordinate(10, 20)))));
+              toByteBuffer(Types.GeometryType.get(), FACTORY.createPoint(new Coordinate(10, 20))),
+              17,
+              toByteBuffer(
+                  Types.GeographyType.get(),
+                  new Geography(FACTORY.createPoint(new Coordinate(10, 20))))));
 
   @Test
   public void testAllNulls() {
@@ -880,29 +901,9 @@ public class TestInclusiveMetricsEvaluator {
 
     shouldRead =
         new InclusiveMetricsEvaluator(
-                SCHEMA, stIntersects("geom", FACTORY.createPoint(new Coordinate(3, 4))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stIntersects("geom", FACTORY.createPoint(new Coordinate(10, 20))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
                 SCHEMA, stIntersects("geom", FACTORY.toGeometry(new Envelope(0, 3, 0, 4))))
             .eval(FILE_5);
     assertThat(shouldRead).as("Should read: query window intersects with the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stIntersects("geom", FACTORY.createPoint(new Coordinate(1, 1))))
-            .eval(FILE_5);
-    assertThat(shouldRead)
-        .as("Should skip: query window does not intersect with the boundary")
-        .isFalse();
 
     shouldRead =
         new InclusiveMetricsEvaluator(
@@ -927,24 +928,6 @@ public class TestInclusiveMetricsEvaluator {
   public void testStCovers() {
     boolean shouldRead =
         new InclusiveMetricsEvaluator(
-                SCHEMA, stCovers("geom", FACTORY.createPoint(new Coordinate(1, 2))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stCovers("geom", FACTORY.createPoint(new Coordinate(3, 4))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stCovers("geom", FACTORY.createPoint(new Coordinate(10, 20))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
                 SCHEMA, stCovers("geom", FACTORY.toGeometry(new Envelope(3, 4, 5, 6))))
             .eval(FILE_5);
     assertThat(shouldRead)
@@ -957,20 +940,6 @@ public class TestInclusiveMetricsEvaluator {
             .eval(FILE_5);
     assertThat(shouldRead)
         .as("Should skip: query window is not completely within the boundary")
-        .isFalse();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stCovers("geom", FACTORY.toGeometry(new Envelope(0, 100, 0, 100))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should skip: query window is not within the boundary").isFalse();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stCovers("geom", FACTORY.createPoint(new Coordinate(1, 1))))
-            .eval(FILE_5);
-    assertThat(shouldRead)
-        .as("Should skip: query window does not intersect with the boundary")
         .isFalse();
 
     shouldRead =
@@ -995,33 +964,11 @@ public class TestInclusiveMetricsEvaluator {
   public void testStDisjoint() {
     boolean shouldRead =
         new InclusiveMetricsEvaluator(
-                SCHEMA, stDisjoint("geom", FACTORY.createPoint(new Coordinate(1, 2))))
-            .eval(FILE_5);
-    assertThat(shouldRead)
-        .as("Should read: query window does not fully cover the boundary")
-        .isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
                 SCHEMA, stDisjoint("geom", FACTORY.toGeometry(new Envelope(3, 4, 5, 6))))
             .eval(FILE_5);
     assertThat(shouldRead)
         .as("Should read: query window does not fully cover the boundary")
         .isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stDisjoint("geom", FACTORY.toGeometry(new Envelope(0, 3, 0, 4))))
-            .eval(FILE_5);
-    assertThat(shouldRead)
-        .as("Should read: query window does not fully cover the boundary")
-        .isTrue();
-
-    shouldRead =
-        new InclusiveMetricsEvaluator(
-                SCHEMA, stDisjoint("geom", FACTORY.toGeometry(new Envelope(0, 100, 0, 100))))
-            .eval(FILE_5);
-    assertThat(shouldRead).as("Should skip: query window fully covers the boundary").isFalse();
 
     shouldRead =
         new InclusiveMetricsEvaluator(
@@ -1033,11 +980,9 @@ public class TestInclusiveMetricsEvaluator {
 
     shouldRead =
         new InclusiveMetricsEvaluator(
-                SCHEMA, stDisjoint("geom", FACTORY.toGeometry(new Envelope(0, 0.5, 0, 2))))
+                SCHEMA, stDisjoint("geom", FACTORY.toGeometry(new Envelope(0, 100, 0, 100))))
             .eval(FILE_5);
-    assertThat(shouldRead)
-        .as("Should read: query window does not intersect with the boundary")
-        .isTrue();
+    assertThat(shouldRead).as("Should skip: query window fully covers the boundary").isFalse();
 
     shouldRead =
         new InclusiveMetricsEvaluator(SCHEMA, stDisjoint("geom", FACTORY.createPoint()))
@@ -1048,5 +993,125 @@ public class TestInclusiveMetricsEvaluator {
         new InclusiveMetricsEvaluator(SCHEMA, stDisjoint("all_nulls_geom", FACTORY.createPoint()))
             .eval(FILE_5);
     assertThat(shouldRead).as("Should read: geometry are all nulls").isTrue();
+  }
+
+  @Test
+  public void testStIntersectsGeog() {
+    boolean shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stIntersects("geog", new Geography(FACTORY.createPoint(new Coordinate(1, 2)))))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should read: query window is within the boundary").isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stIntersects("geog", new Geography(FACTORY.toGeometry(new Envelope(0, 3, 0, 4)))))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should read: query window intersects with the boundary").isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stIntersects("geog", new Geography(FACTORY.toGeometry(new Envelope(0, 0.5, 0, 2)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should skip: query window does not intersect with the boundary")
+        .isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stIntersects("geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should skip: query window is empty").isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stIntersects("all_nulls_geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should skip: geography are all nulls").isFalse();
+  }
+
+  @Test
+  public void testStCoversGeog() {
+    boolean shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stCovers("geog", new Geography(FACTORY.toGeometry(new Envelope(3, 4, 5, 6)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should read: query window is completely within the boundary")
+        .isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stCovers("geog", new Geography(FACTORY.toGeometry(new Envelope(0, 3, 0, 4)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should skip: query window is not completely within the boundary")
+        .isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stCovers("geog", new Geography(FACTORY.toGeometry(new Envelope(0, 0.5, 0, 2)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should skip: query window does not intersect with the boundary")
+        .isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stCovers("geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should skip: query window is empty").isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stCovers("all_nulls_geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should skip: geography are all nulls").isFalse();
+  }
+
+  @Test
+  public void testStDisjointGeog() {
+    boolean shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stDisjoint("geog", new Geography(FACTORY.toGeometry(new Envelope(3, 4, 5, 6)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should read: query window does not fully cover the boundary")
+        .isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stDisjoint("geog", new Geography(FACTORY.createPoint(new Coordinate(1, 1)))))
+            .eval(FILE_5);
+    assertThat(shouldRead)
+        .as("Should read: query window does not intersect with the boundary")
+        .isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA,
+                stDisjoint("geog", new Geography(FACTORY.toGeometry(new Envelope(0, 100, 0, 100)))))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should skip: query window fully covers the boundary").isFalse();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stDisjoint("geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should read: query window is empty").isTrue();
+
+    shouldRead =
+        new InclusiveMetricsEvaluator(
+                SCHEMA, stDisjoint("all_nulls_geog", new Geography(FACTORY.createPoint())))
+            .eval(FILE_5);
+    assertThat(shouldRead).as("Should read: geography are all nulls").isTrue();
   }
 }

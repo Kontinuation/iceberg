@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,10 @@ public class TestMiscLiteralConversions {
             Pair.of(Literal.of(ByteBuffer.wrap(new byte[] {0, 1, 2})), Types.BinaryType.get()),
             Pair.of(
                 Literal.of(FACTORY.toGeometry(new Envelope(1, 2, 10, 20))),
-                Types.GeometryType.get()));
+                Types.GeometryType.get()),
+            Pair.of(
+                Literal.of(new Geography(FACTORY.toGeometry(new Envelope(1, 2, 10, 20)))),
+                Types.GeographyType.get()));
 
     for (Pair<Literal<?>, Type> pair : pairs) {
       Literal<?> lit = pair.first();

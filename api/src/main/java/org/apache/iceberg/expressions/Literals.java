@@ -32,6 +32,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.io.BaseEncoding;
 import org.apache.iceberg.types.Comparators;
@@ -83,6 +84,8 @@ class Literals {
       return (Literal<T>) new Literals.DecimalLiteral((BigDecimal) value);
     } else if (value instanceof Geometry) {
       return (Literal<T>) new Literals.GeometryLiteral((Geometry) value);
+    } else if (value instanceof Geography) {
+      return (Literal<T>) new Literals.GeographyLiteral((Geography) value);
     }
 
     throw new IllegalArgumentException(
@@ -717,6 +720,34 @@ class Literals {
     @Override
     protected Type.TypeID typeId() {
       return Type.TypeID.GEOMETRY;
+    }
+  }
+
+  static class GeographyLiteral extends BaseLiteral<Geography> {
+    private static final Comparator<Geography> CMP =
+        Comparators.<Geography>nullsFirst().thenComparing(Comparator.naturalOrder());
+
+    GeographyLiteral(Geography value) {
+      super(value);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> Literal<T> to(Type type) {
+      if (type.typeId() == Type.TypeID.GEOGRAPHY) {
+        return (Literal<T>) this;
+      }
+      return null;
+    }
+
+    @Override
+    public Comparator<Geography> comparator() {
+      return CMP;
+    }
+
+    @Override
+    protected Type.TypeID typeId() {
+      return Type.TypeID.GEOGRAPHY;
     }
   }
 }

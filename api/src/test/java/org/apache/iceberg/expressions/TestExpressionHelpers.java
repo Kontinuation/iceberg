@@ -52,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.concurrent.Callable;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Types.NestedField;
@@ -104,9 +105,11 @@ public class TestExpressionHelpers {
         StructType.of(
             NestedField.optional(1, "a", Types.IntegerType.get()),
             NestedField.optional(2, "s", Types.StringType.get()),
-            NestedField.optional(3, "g", Types.GeometryType.get()));
+            NestedField.optional(3, "g", Types.GeometryType.get()),
+            NestedField.optional(4, "geog", Types.GeographyType.get()));
     GeometryFactory factory = new GeometryFactory();
     Geometry queryWindow = factory.toGeometry(new Envelope(0, 1, 0, 1));
+    Geography queryWindowGeography = new Geography(queryWindow);
     Expression[][] expressions =
         new Expression[][] {
           // (rewritten pred, original pred) pairs
@@ -140,7 +143,17 @@ public class TestExpressionHelpers {
           {stIntersects("g", queryWindow), not(stDisjoint("g", queryWindow))},
           {stCovers("g", queryWindow), not(stNotCovers("g", queryWindow))},
           {stDisjoint("g", queryWindow), not(stIntersects("g", queryWindow))},
-          {stNotCovers("g", queryWindow), not(stCovers("g", queryWindow))}
+          {stNotCovers("g", queryWindow), not(stCovers("g", queryWindow))},
+          {
+            stIntersects("geog", queryWindowGeography),
+            not(stDisjoint("geog", queryWindowGeography))
+          },
+          {stCovers("geog", queryWindowGeography), not(stNotCovers("geog", queryWindowGeography))},
+          {
+            stDisjoint("geog", queryWindowGeography),
+            not(stIntersects("geog", queryWindowGeography))
+          },
+          {stNotCovers("geog", queryWindowGeography), not(stCovers("geog", queryWindowGeography))}
         };
 
     for (Expression[] pair : expressions) {

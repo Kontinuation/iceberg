@@ -231,6 +231,7 @@ abstract class TypeToSchema extends TypeUtil.SchemaVisitor<Schema> {
         break;
       case BINARY:
       case GEOMETRY:
+      case GEOGRAPHY:
         primitiveSchema = BINARY_SCHEMA;
         break;
       case DECIMAL:

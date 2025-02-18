@@ -163,10 +163,15 @@ public class SingleValueParser {
             BaseEncoding.base16().decode(defaultValue.textValue().toUpperCase(Locale.ROOT));
         return ByteBuffer.wrap(binaryBytes);
       case GEOMETRY:
+      case GEOGRAPHY:
         Preconditions.checkArgument(
             defaultValue.isTextual(), "Cannot parse default as a %s value: %s", type, defaultValue);
         try {
-          return GeometryUtil.fromWKT(defaultValue.textValue());
+          Geometry geom = GeometryUtil.fromWKT(defaultValue.textValue());
+          if (type.typeId() == Type.TypeID.GEOGRAPHY) {
+            return new Geography(geom);
+          }
+          return geom;
         } catch (Exception e) {
           throw new IllegalArgumentException(
               String.format("Cannot parse default as a %s value: %s", type, defaultValue), e);
@@ -350,6 +355,11 @@ public class SingleValueParser {
         Preconditions.checkArgument(
             defaultValue instanceof Geometry, "Invalid default %s value: %s", type, defaultValue);
         generator.writeString(GeometryUtil.toWKT((Geometry) defaultValue));
+        break;
+      case GEOGRAPHY:
+        Preconditions.checkArgument(
+            defaultValue instanceof Geography, "Invalid default %s value: %s", type, defaultValue);
+        generator.writeString(GeometryUtil.toWKT(((Geography) defaultValue).geometry()));
         break;
       case LIST:
         Preconditions.checkArgument(

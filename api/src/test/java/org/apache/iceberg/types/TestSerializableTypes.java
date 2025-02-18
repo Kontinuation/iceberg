@@ -22,6 +22,7 @@ import static org.apache.iceberg.types.Types.NestedField.optional;
 import static org.apache.iceberg.types.Types.NestedField.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TestHelpers;
 import org.junit.jupiter.api.Test;
@@ -64,8 +65,10 @@ public class TestSerializableTypes {
           Types.FixedType.ofLength(4),
           Types.FixedType.ofLength(34),
           Types.GeometryType.get(),
-          Types.GeometryType.of("test_crs"),
-          Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL)
+          Types.GeometryType.of("srid:3857"),
+          Types.GeographyType.get(),
+          Types.GeographyType.of("srid:3857"),
+          Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY),
         };
 
     for (Type type : equalityPrimitives) {

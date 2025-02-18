@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SingleValueParser;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
@@ -229,6 +230,8 @@ public class ExpressionParser {
             Types.DecimalType.of(decimal.precision(), decimal.scale()), decimal, gen);
       } else if (object instanceof Geometry) {
         SingleValueParser.toJson(Types.GeometryType.get(), object, gen);
+      } else if (object instanceof Geography) {
+        SingleValueParser.toJson(Types.GeographyType.get(), object, gen);
       }
     }
 

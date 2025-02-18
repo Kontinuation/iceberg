@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.UUID;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.types.Type;
 import org.locationtech.jts.geom.Geometry;
 
@@ -74,6 +75,10 @@ public interface Literal<T> extends Serializable {
 
   static Literal<Geometry> of(Geometry value) {
     return new Literals.GeometryLiteral(value);
+  }
+
+  static Literal<Geography> of(Geography value) {
+    return new Literals.GeographyLiteral(value);
   }
 
   /** Returns the value wrapped by this literal. */

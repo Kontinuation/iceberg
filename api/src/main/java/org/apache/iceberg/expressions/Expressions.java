@@ -19,6 +19,7 @@
 package org.apache.iceberg.expressions;
 
 import java.util.stream.Stream;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.expressions.Expression.Operation;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
@@ -228,6 +229,41 @@ public class Expressions {
   }
 
   public static UnboundPredicate<Geometry> stNotCovers(UnboundTerm<Geometry> expr, Geometry value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_NOT_COVERS, expr, value);
+  }
+
+  public static UnboundPredicate<Geography> stIntersects(String name, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_INTERSECTS, ref(name), value);
+  }
+
+  public static UnboundPredicate<Geography> stIntersects(
+      UnboundTerm<Geography> expr, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_INTERSECTS, expr, value);
+  }
+
+  public static UnboundPredicate<Geography> stCovers(String name, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_COVERS, ref(name), value);
+  }
+
+  public static UnboundPredicate<Geography> stCovers(UnboundTerm<Geography> expr, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_COVERS, expr, value);
+  }
+
+  public static UnboundPredicate<Geography> stDisjoint(String name, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_DISJOINT, ref(name), value);
+  }
+
+  public static UnboundPredicate<Geography> stDisjoint(
+      UnboundTerm<Geography> expr, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_DISJOINT, expr, value);
+  }
+
+  public static UnboundPredicate<Geography> stNotCovers(String name, Geography value) {
+    return new UnboundPredicate<>(Expression.Operation.ST_NOT_COVERS, ref(name), value);
+  }
+
+  public static UnboundPredicate<Geography> stNotCovers(
+      UnboundTerm<Geography> expr, Geography value) {
     return new UnboundPredicate<>(Expression.Operation.ST_NOT_COVERS, expr, value);
   }
 

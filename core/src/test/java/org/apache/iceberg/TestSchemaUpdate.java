@@ -286,7 +286,9 @@ public class TestSchemaUpdate {
             Types.DecimalType.of(9, 3),
             Types.DecimalType.of(18, 2),
             Types.GeometryType.get(),
-            Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL));
+            Types.GeometryType.of("srid:3857"),
+            Types.GeographyType.get(),
+            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY));
 
     for (Type.PrimitiveType fromType : primitives) {
       for (Type.PrimitiveType toType : primitives) {

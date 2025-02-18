@@ -575,6 +575,8 @@ public class ExpressionUtil {
       return sanitizeNumber(((Literals.DoubleLiteral) literal).value(), "float");
     } else if (literal instanceof Literals.GeometryLiteral) {
       return "(geometry)";
+    } else if (literal instanceof Literals.GeographyLiteral) {
+      return "(geography)";
     } else {
       // for uuid, decimal, fixed, and binary, match the string result
       return sanitizeSimpleString(literal.value().toString());

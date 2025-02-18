@@ -156,7 +156,7 @@ public class TestParquetScan extends ParameterizedAvroDataTest {
             optional(
                 119,
                 "geog",
-                Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL)));
+                Types.GeometryType.of("srid:3857", Types.GeometryType.Edges.SPHERICAL)));
     writeAndValidate(TypeUtil.assignIncreasingFreshIds(new Schema(schema.fields())));
   }
 

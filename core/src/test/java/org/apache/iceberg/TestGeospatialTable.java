@@ -19,6 +19,7 @@
 package org.apache.iceberg;
 
 import static org.apache.iceberg.types.Types.NestedField.required;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.Map;
@@ -28,7 +29,6 @@ import org.apache.iceberg.hadoop.HadoopTableTestBase;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TestGeospatialTable extends HadoopTableTestBase {
@@ -39,23 +39,30 @@ public class TestGeospatialTable extends HadoopTableTestBase {
         new Schema(
             required(3, "id", Types.IntegerType.get(), "unique ID"),
             required(4, "data", Types.StringType.get()),
+            required(5, "geom", Types.GeometryType.of("srid:3857"), "geometry column"),
             required(
-                5,
-                "geom",
-                Types.GeometryType.of("test_crs", Types.GeometryType.Edges.SPHERICAL),
-                "geospatial column"));
+                6,
+                "geog",
+                Types.GeographyType.of("srid:4269", Geography.EdgeInterpolationAlgorithm.KARNEY),
+                "geography column"));
 
     TableIdentifier identifier = TableIdentifier.of("a", "geos_t1");
     try (HadoopCatalog catalog = hadoopCatalog()) {
       Map<String, String> properties = ImmutableMap.of(TableProperties.FORMAT_VERSION, "3");
       catalog.createTable(identifier, schema, PartitionSpec.unpartitioned(), properties);
       Table table = catalog.loadTable(identifier);
+
       Types.NestedField geomField = table.schema().findField("geom");
-      Assertions.assertEquals(geomField.type().typeId(), Type.TypeID.GEOMETRY);
+      assertThat(geomField.type().typeId()).isEqualTo(Type.TypeID.GEOMETRY);
       Types.GeometryType geomType = (Types.GeometryType) geomField.type();
-      Assertions.assertEquals("test_crs", geomType.crs());
-      Assertions.assertEquals(Types.GeometryType.Edges.SPHERICAL, geomType.edges());
-      Assertions.assertTrue(catalog.dropTable(identifier));
+      assertThat(geomType.crs()).isEqualTo("srid:3857");
+
+      Types.NestedField geogField = table.schema().findField("geog");
+      assertThat(geogField.type().typeId()).isEqualTo(Type.TypeID.GEOGRAPHY);
+      Types.GeographyType geogType = (Types.GeographyType) geogField.type();
+      assertThat(geogType.crs()).isEqualTo("srid:4269");
+      assertThat(geogType.algorithm()).isEqualTo(Geography.EdgeInterpolationAlgorithm.KARNEY);
+      assertThat(catalog.dropTable(identifier)).isTrue();
     }
   }
 }
