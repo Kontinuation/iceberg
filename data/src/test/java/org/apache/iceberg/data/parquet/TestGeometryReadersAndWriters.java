@@ -89,8 +89,7 @@ public class TestGeometryReadersAndWriters {
 
   private List<List<Record>> prepareTestData() {
     // Test data contains records for four data files, where each data file contain a set of
-    // geometries
-    // in a different quadrant of the cartesian plane.
+    // geometries in a different quadrant of the cartesian plane.
     List<List<Record>> recordsInDataFiles = Lists.newArrayList();
     long id = 0;
     for (int i = 0; i < 4; i++) {

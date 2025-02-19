@@ -66,7 +66,7 @@ public class TestParquetSchemaUtil {
           required(
               120,
               "geog2",
-              Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY)));
+              Types.GeographyType.of("srid:4269", Geography.EdgeInterpolationAlgorithm.KARNEY)));
 
   @Test
   public void testAssignIdsByNameMapping() {

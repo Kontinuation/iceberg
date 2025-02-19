@@ -18,33 +18,34 @@
  */
 package org.apache.iceberg.parquet;
 
+import org.apache.iceberg.Geography;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.io.api.Binary;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
 
-public class ParquetGeometryValueReaders {
+public class ParquetGeographyValueReaders {
+  private ParquetGeographyValueReaders() {}
 
-  private ParquetGeometryValueReaders() {}
-
-  public static ParquetValueReader<Geometry> buildReader(ColumnDescriptor desc) {
-    return new GeometryReader(desc);
+  public static ParquetValueReader<Geography> buildReader(ColumnDescriptor desc) {
+    return new GeographyReader(desc);
   }
 
-  private static class GeometryReader extends ParquetValueReaders.PrimitiveReader<Geometry> {
+  private static class GeographyReader extends ParquetValueReaders.PrimitiveReader<Geography> {
 
     private final WKBReader wkbReader = new WKBReader();
 
-    GeometryReader(ColumnDescriptor desc) {
+    GeographyReader(ColumnDescriptor desc) {
       super(desc);
     }
 
     @Override
-    public Geometry read(Geometry reuse) {
+    public Geography read(Geography reuse) {
       Binary binary = column.nextBinary();
       try {
-        return wkbReader.read(binary.getBytes());
+        Geometry geom = wkbReader.read(binary.getBytes());
+        return new Geography(geom);
       } catch (ParseException e) {
         throw new RuntimeException("Cannot parse byte array as geometry encoded in WKB", e);
       }

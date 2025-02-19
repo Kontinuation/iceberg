@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.iceberg.FieldMetrics;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.Metrics;
 import org.apache.iceberg.MetricsConfig;
 import org.apache.iceberg.MetricsModes;
@@ -152,8 +153,10 @@ public class ParquetUtil {
               if (typeId == Type.TypeID.GEOMETRY || typeId == Type.TypeID.GEOGRAPHY) {
                 BinaryStatistics binaryStats = (BinaryStatistics) stats;
                 GeospatialStatistics geometryStats = binaryStats.getGeospatialStatistics();
-                BoundingBox boundingBox = geometryStats.getBoundingBox();
-                updateGeometryBounds(lowerBounds, upperBounds, fieldId, boundingBox);
+                if (geometryStats != null) {
+                  BoundingBox boundingBox = geometryStats.getBoundingBox();
+                  updateGeometryBounds(typeId, lowerBounds, upperBounds, fieldId, boundingBox);
+                }
               } else {
                 Literal<?> min =
                     ParquetConversions.fromParquetPrimitive(
@@ -353,22 +356,22 @@ public class ParquetUtil {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private static void updateGeometryBounds(
+      Type.TypeID typeId,
       Map<Integer, Literal<?>> lowerBounds,
       Map<Integer, Literal<?>> upperBounds,
       int id,
       BoundingBox bbox) {
     GeometryFactory factory = new GeometryFactory();
-    Literal<Geometry> currentMin = (Literal<Geometry>) lowerBounds.get(id);
-    Literal<Geometry> currentMax = (Literal<Geometry>) upperBounds.get(id);
+    Literal<?> currentMin = lowerBounds.get(id);
     if (currentMin == null) {
       Geometry min =
           factory.createPoint(
               new CoordinateXYZM(bbox.getXMin(), bbox.getYMin(), bbox.getZMin(), bbox.getMMin()));
       lowerBounds.put(id, Literal.of(min));
+      putSpatialBound(typeId, lowerBounds, id, min);
     } else {
-      Coordinate currentMinCoord = currentMin.value().getCoordinate();
+      Coordinate currentMinCoord = getSpatialBoundCoordinate(typeId, currentMin);
       double xMin = currentMinCoord.getX();
       double yMin = currentMinCoord.getY();
       double zMin = currentMinCoord.getZ();
@@ -382,16 +385,17 @@ public class ParquetUtil {
         mMin = Math.min(bbox.getMMin(), mMin);
       }
       Geometry newMin = factory.createPoint(new CoordinateXYZM(xMin, yMin, zMin, mMin));
-      lowerBounds.put(id, Literal.of(newMin));
+      putSpatialBound(typeId, lowerBounds, id, newMin);
     }
 
-    if (currentMax == null) {
+    Literal<?> currentMax = upperBounds.get(id);
+    if (upperBounds.get(id) == null) {
       Geometry max =
           factory.createPoint(
               new CoordinateXYZM(bbox.getXMax(), bbox.getYMax(), bbox.getZMax(), bbox.getMMax()));
-      upperBounds.put(id, Literal.of(max));
+      putSpatialBound(typeId, upperBounds, id, max);
     } else {
-      Coordinate currentMaxCoord = currentMax.value().getCoordinate();
+      Coordinate currentMaxCoord = getSpatialBoundCoordinate(typeId, currentMax);
       double xMax = currentMaxCoord.getX();
       double yMax = currentMaxCoord.getY();
       double zMax = currentMaxCoord.getZ();
@@ -405,7 +409,33 @@ public class ParquetUtil {
         mMax = Math.max(bbox.getMMax(), mMax);
       }
       Geometry newMax = factory.createPoint(new CoordinateXYZM(xMax, yMax, zMax, mMax));
-      upperBounds.put(id, Literal.of(newMax));
+      putSpatialBound(typeId, upperBounds, id, newMax);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Coordinate getSpatialBoundCoordinate(Type.TypeID typeId, Literal<?> bound) {
+    switch (typeId) {
+      case GEOMETRY:
+        return ((Literal<Geometry>) bound).value().getCoordinate();
+      case GEOGRAPHY:
+        return ((Literal<Geography>) bound).value().geometry().getCoordinate();
+      default:
+        throw new IllegalStateException("Invalid spatial type id: " + typeId);
+    }
+  }
+
+  private static void putSpatialBound(
+      Type.TypeID typeId, Map<Integer, Literal<?>> bounds, int id, Geometry geometry) {
+    switch (typeId) {
+      case GEOMETRY:
+        bounds.put(id, Literal.of(geometry));
+        break;
+      case GEOGRAPHY:
+        bounds.put(id, Literal.of(new Geography(geometry)));
+        break;
+      default:
+        throw new IllegalStateException("Invalid spatial type id: " + typeId);
     }
   }
 

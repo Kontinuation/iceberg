@@ -368,7 +368,7 @@ public class TestSchemaUpdate {
             Types.GeometryType.get(),
             Types.GeometryType.of("srid:3857"),
             Types.GeographyType.get(),
-            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY));
+            Types.GeographyType.of("srid:4269", Geography.EdgeInterpolationAlgorithm.KARNEY));
 
     for (Type.PrimitiveType fromType : primitives) {
       for (Type.PrimitiveType toType : primitives) {

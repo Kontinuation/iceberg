@@ -115,7 +115,8 @@ public class ArrowReader extends CloseableGroup {
           TypeID.UUID,
           TypeID.TIME,
           TypeID.DECIMAL,
-          TypeID.GEOMETRY);
+          TypeID.GEOMETRY,
+          TypeID.GEOGRAPHY);
 
   private final Schema schema;
   private final FileIO io;

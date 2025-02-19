@@ -60,7 +60,7 @@ public class TestSingleValueParser {
           {Types.GeometryType.of("srid:3857"), "\"POINT (1 2)\""},
           {Types.GeographyType.get(), "\"POINT ZM(1 2 3 4)\""},
           {
-            Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY),
+            Types.GeographyType.of("srid:4269", Geography.EdgeInterpolationAlgorithm.KARNEY),
             "\"POINT ZM(1 2 3 4)\""
           },
           {Types.ListType.ofOptional(1, Types.IntegerType.get()), "[1, 2, 3]"},

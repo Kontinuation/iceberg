@@ -18,36 +18,36 @@
  */
 package org.apache.iceberg.parquet;
 
+import org.apache.iceberg.Geography;
+import org.apache.iceberg.util.GeometryUtil;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.io.api.Binary;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKBReader;
+import org.locationtech.jts.io.WKBWriter;
 
-public class ParquetGeometryValueReaders {
+public class ParquetGeographyValueWriters {
+  private ParquetGeographyValueWriters() {}
 
-  private ParquetGeometryValueReaders() {}
-
-  public static ParquetValueReader<Geometry> buildReader(ColumnDescriptor desc) {
-    return new GeometryReader(desc);
+  public static ParquetValueWriters.PrimitiveWriter<Geography> buildWriter(ColumnDescriptor desc) {
+    return new GeographyWriter(desc);
   }
 
-  private static class GeometryReader extends ParquetValueReaders.PrimitiveReader<Geometry> {
+  private static class GeographyWriter extends ParquetValueWriters.PrimitiveWriter<Geography> {
 
-    private final WKBReader wkbReader = new WKBReader();
+    private final WKBWriter[] wkbWriters = {
+      new WKBWriter(2, false), new WKBWriter(3, false), new WKBWriter(4, false)
+    };
 
-    GeometryReader(ColumnDescriptor desc) {
+    GeographyWriter(ColumnDescriptor desc) {
       super(desc);
     }
 
     @Override
-    public Geometry read(Geometry reuse) {
-      Binary binary = column.nextBinary();
-      try {
-        return wkbReader.read(binary.getBytes());
-      } catch (ParseException e) {
-        throw new RuntimeException("Cannot parse byte array as geometry encoded in WKB", e);
-      }
+    public void write(int rl, Geography geog) {
+      Geometry geom = geog.geometry();
+      int numDimensions = GeometryUtil.getOutputDimension(geom);
+      byte[] wkb = wkbWriters[numDimensions - 2].write(geom);
+      column.writeBinary(rl, Binary.fromReusedByteArray(wkb));
     }
   }
 }

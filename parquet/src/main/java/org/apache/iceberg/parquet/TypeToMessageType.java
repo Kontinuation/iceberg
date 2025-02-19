@@ -26,6 +26,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 
+import java.util.Locale;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.avro.AvroSchemaUtil;
 import org.apache.iceberg.types.Type.NestedType;
@@ -172,7 +173,9 @@ public class TypeToMessageType {
         return Types.primitive(BINARY, repetition)
             .as(
                 LogicalTypeAnnotation.geographyType(
-                    geographyType.crs(), geographyType.algorithm().value(), null))
+                    geographyType.crs(),
+                    geographyType.algorithm().value().toUpperCase(Locale.ROOT),
+                    null))
             .id(id)
             .named(name);
       case FIXED:

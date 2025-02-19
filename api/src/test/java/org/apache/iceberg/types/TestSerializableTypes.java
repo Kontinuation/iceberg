@@ -68,8 +68,8 @@ public class TestSerializableTypes {
           Types.GeometryType.get(),
           Types.GeometryType.of("srid:3857"),
           Types.GeographyType.get(),
-          Types.GeographyType.of("srid:3857"),
-          Types.GeographyType.of("srid:3857", Geography.EdgeInterpolationAlgorithm.KARNEY),
+          Types.GeographyType.of("srid:4269"),
+          Types.GeographyType.of("srid:4269", Geography.EdgeInterpolationAlgorithm.KARNEY),
         };
 
     for (Type type : equalityPrimitives) {

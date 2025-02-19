@@ -70,6 +70,8 @@ public class DictEncodedArrowConverter {
         return toTimeMicroVector(vectorHolder, accessor);
       } else if (Type.TypeID.GEOMETRY.equals(vectorHolder.icebergType().typeId())) {
         return toVarBinaryVector(vectorHolder, accessor);
+      } else if (Type.TypeID.GEOGRAPHY.equals(vectorHolder.icebergType().typeId())) {
+        return toVarBinaryVector(vectorHolder, accessor);
       }
 
       throw new IllegalArgumentException(

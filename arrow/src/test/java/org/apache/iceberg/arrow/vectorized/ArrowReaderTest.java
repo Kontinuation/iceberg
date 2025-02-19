@@ -63,6 +63,7 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.Files;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.OverwriteFiles;
 import org.apache.iceberg.PartitionKey;
 import org.apache.iceberg.PartitionSpec;
@@ -129,7 +130,9 @@ public class ArrowReaderTest {
           "decimal",
           "decimal_nullable",
           "geometry",
-          "geometry_nullable");
+          "geometry_nullable",
+          "geography",
+          "geography_nullable");
   @TempDir private File tempDir;
 
   private HadoopTables tables;
@@ -658,6 +661,26 @@ public class ArrowReaderTest {
         "geometry_nullable",
         (records, i) -> records.get(i).getField("geometry_nullable"),
         (array, i) -> GeometryUtil.fromWKB(array.getBinary(i)));
+
+    checkColumnarArrayValues(
+        expectedNumRows,
+        expectedRows,
+        batch,
+        columnNameToIndex.get("geography"),
+        columnSet,
+        "geography",
+        (records, i) -> records.get(i).getField("geography"),
+        (array, i) -> new Geography(GeometryUtil.fromWKB(array.getBinary(i))));
+
+    checkColumnarArrayValues(
+        expectedNumRows,
+        expectedRows,
+        batch,
+        columnNameToIndex.get("geography_nullable"),
+        columnSet,
+        "geography_nullable",
+        (records, i) -> records.get(i).getField("geography_nullable"),
+        (array, i) -> new Geography(GeometryUtil.fromWKB(array.getBinary(i))));
   }
 
   private static void checkColumnarArrayValues(
@@ -725,8 +748,10 @@ public class ArrowReaderTest {
             Types.NestedField.required(26, "decimal", Types.DecimalType.of(9, 2)),
             Types.NestedField.optional(27, "decimal_nullable", Types.DecimalType.of(9, 2)),
             Types.NestedField.required(28, "geometry", Types.GeometryType.get()),
+            Types.NestedField.optional(29, "geometry_nullable", Types.GeometryType.of("srid:3857")),
+            Types.NestedField.required(30, "geography", Types.GeographyType.get()),
             Types.NestedField.optional(
-                29, "geometry_nullable", Types.GeometryType.of("srid:3857")));
+                31, "geography_nullable", Types.GeographyType.of("srid:4326", "karney")));
 
     PartitionSpec spec = PartitionSpec.builderFor(schema).month("timestamp").build();
 
@@ -817,6 +842,11 @@ public class ArrowReaderTest {
             new Field(
                 "geometry_nullable",
                 new FieldType(true, MinorType.VARBINARY.getType(), null),
+                null),
+            new Field("geography", new FieldType(false, MinorType.VARBINARY.getType(), null), null),
+            new Field(
+                "geography_nullable",
+                new FieldType(true, MinorType.VARBINARY.getType(), null),
                 null));
     List<Field> filteredFields =
         allFields.stream()
@@ -862,6 +892,9 @@ public class ArrowReaderTest {
       rec.setField("decimal_nullable", new BigDecimal("14.0" + i % 10));
       rec.setField("geometry", GeometryUtil.fromWKT("POINT (" + i + " 1)"));
       rec.setField("geometry_nullable", GeometryUtil.fromWKT("POINT (" + i + " 1)"));
+      rec.setField("geography", new Geography(GeometryUtil.fromWKT("POINT (" + i + " 1)")));
+      rec.setField(
+          "geography_nullable", new Geography(GeometryUtil.fromWKT("POINT (" + i + " 1)")));
       records.add(rec);
     }
     return records;
@@ -901,6 +934,8 @@ public class ArrowReaderTest {
       rec.setField("decimal_nullable", new BigDecimal("14.20"));
       rec.setField("geometry", GeometryUtil.fromWKT("POINT (30 10)"));
       rec.setField("geometry_nullable", GeometryUtil.fromWKT("POINT (30 10)"));
+      rec.setField("geography", new Geography(GeometryUtil.fromWKT("POINT (30 10)")));
+      rec.setField("geography_nullable", new Geography(GeometryUtil.fromWKT("POINT (30 10)")));
       records.add(rec);
     }
     return records;
@@ -983,6 +1018,8 @@ public class ArrowReaderTest {
     assertEqualsForField(root, columnSet, "decimal_nullable", DecimalVector.class);
     assertEqualsForField(root, columnSet, "geometry", VarBinaryVector.class);
     assertEqualsForField(root, columnSet, "geometry_nullable", VarBinaryVector.class);
+    assertEqualsForField(root, columnSet, "geography", VarBinaryVector.class);
+    assertEqualsForField(root, columnSet, "geography_nullable", VarBinaryVector.class);
   }
 
   private void assertEqualsForField(
