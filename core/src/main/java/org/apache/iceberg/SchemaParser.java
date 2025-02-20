@@ -299,13 +299,13 @@ public class SchemaParser {
   }
 
   private static Types.GeometryType geometryFromJson(JsonNode json) {
-    String crs = JsonUtil.getString("crs", json);
+    String crs = JsonUtil.getStringOrNull("crs", json);
     return Types.GeometryType.of(crs);
   }
 
   private static Types.GeographyType geographyFromJson(JsonNode json) {
-    String crs = JsonUtil.getString("crs", json);
-    String algorithm = JsonUtil.getString("algorithm", json);
+    String crs = JsonUtil.getStringOrNull("crs", json);
+    String algorithm = JsonUtil.getStringOrNull("algorithm", json);
     return Types.GeographyType.of(crs, algorithm);
   }
 

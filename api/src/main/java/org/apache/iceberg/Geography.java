@@ -106,15 +106,18 @@ public class Geography implements Comparable<Geography>, Serializable {
 
   public boolean intersects(Geography other, EdgeInterpolationAlgorithm algorithm) {
     if (algorithm != EdgeInterpolationAlgorithm.SPHERICAL) {
-      throw new UnsupportedOperationException("Interpolation algorithm is not supported yet");
+      throw new UnsupportedOperationException(
+          "Interpolation algorithm other than spherical is not supported yet");
     }
+
     // TODO: implement a correct spherical intersection algorithm using S2
     return geometry.intersects(other.geometry);
   }
 
   public boolean covers(Geography other, EdgeInterpolationAlgorithm algorithm) {
     if (algorithm != EdgeInterpolationAlgorithm.SPHERICAL) {
-      throw new UnsupportedOperationException("Interpolation algorithm is not supported yet");
+      throw new UnsupportedOperationException(
+          "Interpolation algorithm other than spherical is not supported yet");
     }
     // TODO: implement a correct spherical covers algorithm using S2
     return geometry.covers(other.geometry);

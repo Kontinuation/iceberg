@@ -165,7 +165,7 @@ public class TypeToMessageType {
       case GEOMETRY:
         GeometryType geometryType = ((GeometryType) primitive);
         return Types.primitive(BINARY, repetition)
-            .as(LogicalTypeAnnotation.geometryType(geometryType.crs(), null))
+            .as(LogicalTypeAnnotation.geometryType(geometryType.crs()))
             .id(id)
             .named(name);
       case GEOGRAPHY:
@@ -174,8 +174,7 @@ public class TypeToMessageType {
             .as(
                 LogicalTypeAnnotation.geographyType(
                     geographyType.crs(),
-                    geographyType.algorithm().value().toUpperCase(Locale.ROOT),
-                    null))
+                    geographyType.algorithm().value().toUpperCase(Locale.ROOT)))
             .id(id)
             .named(name);
       case FIXED:
