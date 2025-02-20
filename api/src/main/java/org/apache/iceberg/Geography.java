@@ -94,7 +94,9 @@ public class Geography implements Comparable<Geography>, Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof Geography)) return false;
+    if (!(o instanceof Geography)) {
+      return false;
+    }
     Geography geography = (Geography) o;
     return Objects.equals(geometry, geography.geometry);
   }

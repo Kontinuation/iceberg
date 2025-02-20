@@ -204,6 +204,7 @@ public class ExpressionParser {
           });
     }
 
+    @SuppressWarnings("checkstyle:CyclomaticComplexity")
     private void unboundLiteral(Object object) throws IOException {
       // this handles each type supported in Literals.from
       if (object instanceof Integer) {

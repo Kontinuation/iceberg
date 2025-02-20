@@ -148,15 +148,13 @@ public class TestGeometryUtil {
   @Test
   public void testBoundMayIntersects() {
     GeometryFactory factory = new GeometryFactory();
-    Point lowerBound, upperBound;
-    Geometry geom;
 
     // Test regular case (not crossing anti-meridian)
-    lowerBound = factory.createPoint(new Coordinate(0, 0));
-    upperBound = factory.createPoint(new Coordinate(10, 10));
+    Point lowerBound = factory.createPoint(new Coordinate(0, 0));
+    Point upperBound = factory.createPoint(new Coordinate(10, 10));
 
     // Envelope completely inside bound
-    geom = factory.toGeometry(new Envelope(2, 8, 2, 8));
+    Geometry geom = factory.toGeometry(new Envelope(2, 8, 2, 8));
     assertThat(GeometryUtil.boundMayIntersects(lowerBound, upperBound, geom)).isTrue();
 
     // Envelope partially overlapping bound
@@ -195,15 +193,13 @@ public class TestGeometryUtil {
   @Test
   public void testBoundMayCovers() {
     GeometryFactory factory = new GeometryFactory();
-    Point lowerBound, upperBound;
-    Geometry geom;
 
     // Test regular case (not crossing anti-meridian)
-    lowerBound = factory.createPoint(new Coordinate(0, 0));
-    upperBound = factory.createPoint(new Coordinate(10, 10));
+    Point lowerBound = factory.createPoint(new Coordinate(0, 0));
+    Point upperBound = factory.createPoint(new Coordinate(10, 10));
 
     // Envelope completely inside bound
-    geom = factory.toGeometry(new Envelope(2, 8, 2, 8));
+    Geometry geom = factory.toGeometry(new Envelope(2, 8, 2, 8));
     assertThat(GeometryUtil.boundMayCovers(lowerBound, upperBound, geom)).isTrue();
 
     // Envelope partially inside bound
@@ -238,15 +234,13 @@ public class TestGeometryUtil {
   @Test
   public void testBoundMustBeCoveredBy() {
     GeometryFactory factory = new GeometryFactory();
-    Point lowerBound, upperBound;
-    Geometry geom;
 
     // Test regular case (not crossing anti-meridian)
-    lowerBound = factory.createPoint(new Coordinate(2, 2));
-    upperBound = factory.createPoint(new Coordinate(8, 8));
+    Point lowerBound = factory.createPoint(new Coordinate(2, 2));
+    Point upperBound = factory.createPoint(new Coordinate(8, 8));
 
     // Envelope completely covering the bound
-    geom = factory.toGeometry(new Envelope(0, 10, 0, 10));
+    Geometry geom = factory.toGeometry(new Envelope(0, 10, 0, 10));
     assertThat(GeometryUtil.boundMustBeCoveredBy(lowerBound, upperBound, geom)).isTrue();
 
     // Envelope partially covering the bound
