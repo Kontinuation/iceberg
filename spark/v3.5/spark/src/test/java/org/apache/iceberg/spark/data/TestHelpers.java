@@ -49,6 +49,7 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DeleteFile;
 import org.apache.iceberg.FileContent;
 import org.apache.iceberg.FileScanTask;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -293,14 +294,20 @@ public class TestHelpers {
         assertEqualsSafe(type.asNestedType().asMapType(), (Map<String, ?>) expected, asMap);
         break;
       case GEOMETRY:
+      case GEOGRAPHY:
         Geometry expectedGeom;
         if (expected instanceof ByteBuffer) {
           expectedGeom = GeometryUtil.fromWKB(((ByteBuffer) expected).array());
         } else {
           expectedGeom = (Geometry) expected;
         }
-        Geometry actualGeom = (Geometry) actual;
-        assertThat(actualGeom).as("Geometries should be equal").isEqualTo(expectedGeom);
+        if (type.typeId() == Type.TypeID.GEOMETRY) {
+          assertThat(actual).as("Geometries should be equal").isEqualTo(expectedGeom);
+        } else {
+          assertThat(actual)
+              .as("Geographies should be equal")
+              .isEqualTo(new Geography(expectedGeom));
+        }
         break;
       case TIME:
       default:

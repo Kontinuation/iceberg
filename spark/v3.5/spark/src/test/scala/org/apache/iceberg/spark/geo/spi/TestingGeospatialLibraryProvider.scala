@@ -18,11 +18,6 @@
  */
 package org.apache.iceberg.spark.geo.spi
 
-import org.apache.iceberg.spark.geo.testing.GeometryUDT
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.types.DataType
-import org.locationtech.jts.geom.Geometry
-
 class TestingGeospatialLibraryProvider extends GeospatialLibraryProvider {
   def name(): String = {
     "iceberg-spark-extensions-testing"

@@ -243,9 +243,13 @@ public class PruneColumnsWithoutReordering extends TypeUtil.CustomOrderSchemaVis
             .put(TypeID.STRING, ImmutableSet.of(StringType$.class))
             .put(TypeID.FIXED, ImmutableSet.of(BinaryType$.class))
             .put(TypeID.BINARY, ImmutableSet.of(BinaryType$.class));
-    if (GeospatialLibraryAccessor.isGeospatialLibraryAvailable()) {
+    if (GeospatialLibraryAccessor.isGeometryTypeAvailable()) {
       DataType geometryType = GeospatialLibraryAccessor.getGeometryType();
       builder.put(TypeID.GEOMETRY, ImmutableSet.of(geometryType.getClass()));
+    }
+    if (GeospatialLibraryAccessor.isGeographyTypeAvailable()) {
+      DataType geographyType = GeospatialLibraryAccessor.getGeographyType();
+      builder.put(TypeID.GEOGRAPHY, ImmutableSet.of(geographyType.getClass()));
     }
     return builder.buildOrThrow();
   }

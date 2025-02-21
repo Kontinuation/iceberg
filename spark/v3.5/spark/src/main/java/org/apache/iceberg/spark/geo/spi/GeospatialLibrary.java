@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.spark.geo.spi;
 
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.spark.sql.types.DataType;
 import org.locationtech.jts.geom.Geometry;
@@ -25,9 +26,15 @@ import org.locationtech.jts.geom.Geometry;
 public interface GeospatialLibrary {
   DataType getGeometryType();
 
-  Object fromJTS(Geometry geometry);
+  DataType getGeographyType();
 
-  Geometry toJTS(Object geometry);
+  Object fromGeometry(Geometry geometry);
+
+  Geometry toGeometry(Object geometry);
+
+  Object fromGeography(Geography geography);
+
+  Geography toGeography(Object geography);
 
   boolean isSpatialFilter(org.apache.spark.sql.catalyst.expressions.Expression sparkExpression);
 

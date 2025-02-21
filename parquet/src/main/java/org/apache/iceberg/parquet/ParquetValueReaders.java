@@ -1066,6 +1066,11 @@ public class ParquetValueReaders {
     }
 
     @Override
+    public void setPageSource(PageReadStore pageStore) {
+      delegate.setPageSource(pageStore);
+    }
+
+    @Override
     public TripleIterator<?> column() {
       return delegate.column();
     }

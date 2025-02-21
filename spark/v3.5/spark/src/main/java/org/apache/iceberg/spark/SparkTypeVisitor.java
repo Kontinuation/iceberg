@@ -49,9 +49,12 @@ class SparkTypeVisitor<T> {
     } else if (type instanceof ArrayType) {
       return visitor.array((ArrayType) type, visit(((ArrayType) type).elementType(), visitor));
 
-    } else if (GeospatialLibraryAccessor.isGeospatialLibraryAvailable()
+    } else if (GeospatialLibraryAccessor.isGeometryTypeAvailable()
         && GeospatialLibraryAccessor.getGeometryType().sameType(type)) {
-      // Iceberg defines geometry type as a primitive type
+      return visitor.atomic(type);
+
+    } else if (GeospatialLibraryAccessor.isGeographyTypeAvailable()
+        && GeospatialLibraryAccessor.getGeographyType().sameType(type)) {
       return visitor.atomic(type);
 
     } else if (type instanceof UserDefinedType) {

@@ -36,7 +36,12 @@ object IcebergSparkSqlParser extends SparkSqlParser {
      */
     override def visitPrimitiveDataType(ctx: PrimitiveDataTypeContext): DataType = withOrigin(ctx) {
       ctx.`type`.getText.toLowerCase(Locale.ROOT) match {
-        case "geometry" => GeospatialLibraryAccessor.getGeometryType
+        case "geometry" =>
+          GeospatialLibraryAccessor.assertGeometryTypeAvailable()
+          GeospatialLibraryAccessor.getGeometryType
+        case "geography" =>
+          GeospatialLibraryAccessor.assertGeographyTypeAvailable()
+          GeospatialLibraryAccessor.getGeographyType
         case _ => super.visitPrimitiveDataType(ctx)
       }
     }

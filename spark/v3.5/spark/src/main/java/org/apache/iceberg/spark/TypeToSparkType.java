@@ -126,7 +126,11 @@ class TypeToSparkType extends TypeUtil.SchemaVisitor<DataType> {
         Types.DecimalType decimal = (Types.DecimalType) primitive;
         return DecimalType$.MODULE$.apply(decimal.precision(), decimal.scale());
       case GEOMETRY:
+        GeospatialLibraryAccessor.assertGeometryTypeAvailable();
         return GeospatialLibraryAccessor.getGeometryType();
+      case GEOGRAPHY:
+        GeospatialLibraryAccessor.assertGeographyTypeAvailable();
+        return GeospatialLibraryAccessor.getGeographyType();
       default:
         throw new UnsupportedOperationException(
             "Cannot convert unknown type to Spark: " + primitive);

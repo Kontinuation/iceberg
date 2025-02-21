@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.MetadataColumns;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.parquet.ParquetGeographyValueReaders;
 import org.apache.iceberg.parquet.ParquetGeometryValueReaders;
 import org.apache.iceberg.parquet.ParquetSchemaUtil;
 import org.apache.iceberg.parquet.ParquetValueReader;
@@ -238,8 +240,12 @@ public class SparkParquetReaders {
         org.apache.iceberg.types.Type.PrimitiveType expected, PrimitiveType primitive) {
       ColumnDescriptor desc = type.getColumnDescription(currentPath());
 
-      if (expected != null && expected.typeId() == TypeID.GEOMETRY) {
-        return new SparkGeometryReader(desc);
+      if (expected != null) {
+        if (expected.typeId() == TypeID.GEOMETRY) {
+          return new SparkGeometryReader(desc);
+        } else if (expected.typeId() == TypeID.GEOGRAPHY) {
+          return new SparkGeographyReader(desc);
+        }
       }
 
       if (primitive.getOriginalType() != null) {
@@ -408,7 +414,20 @@ public class SparkParquetReaders {
     @Override
     public Object read(Object reuse) {
       Geometry geom = delegate.read(null);
-      return GeospatialLibraryAccessor.fromJTS(geom);
+      return GeospatialLibraryAccessor.fromGeometry(geom);
+    }
+  }
+
+  private static class SparkGeographyReader
+      extends ParquetValueReaders.DelegateValueReader<Object, Geography> {
+    SparkGeographyReader(ColumnDescriptor desc) {
+      super(ParquetGeographyValueReaders.buildReader(desc));
+    }
+
+    @Override
+    public Object read(Object reuse) {
+      Geography geography = delegate.read(null);
+      return GeospatialLibraryAccessor.fromGeography(geography);
     }
   }
 

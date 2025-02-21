@@ -157,10 +157,16 @@ class SparkTypeToType extends SparkTypeVisitor<Type> {
     } else if (atomic instanceof BinaryType) {
       return Types.BinaryType.get();
     } else {
-      if (GeospatialLibraryAccessor.isGeospatialLibraryAvailable()) {
+      if (GeospatialLibraryAccessor.isGeometryTypeAvailable()) {
         DataType geometryType = GeospatialLibraryAccessor.getGeometryType();
         if (atomic.sameType(geometryType)) {
           return Types.GeometryType.get();
+        }
+      }
+      if (GeospatialLibraryAccessor.isGeographyTypeAvailable()) {
+        DataType geographyType = GeospatialLibraryAccessor.getGeographyType();
+        if (atomic.sameType(geographyType)) {
+          return Types.GeographyType.get();
         }
       }
     }

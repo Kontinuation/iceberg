@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.spark.geo.spi
 
+import org.apache.iceberg.Geography
 import org.apache.iceberg.expressions.{Expressions => IcebergExpressions}
 import org.apache.iceberg.spark.geo.testing.GeometryUDT
 import org.apache.iceberg.spark.geo.testing.ST_Covers
@@ -31,16 +32,28 @@ import org.apache.spark.sql.types.DataType
 import org.locationtech.jts.geom.Geometry
 
 class TestingGeospatialLibrary extends GeospatialLibrary {
-  def getGeometryType(): DataType = {
+  def getGeometryType: DataType = {
     GeometryUDT
   }
 
-  def fromJTS(geometry: Geometry): AnyRef = {
+  override def getGeographyType: DataType = {
+    GeometryUDT
+  }
+
+  def fromGeometry(geometry: Geometry): AnyRef = {
     GeometryUDT.serialize(geometry).asInstanceOf[AnyRef]
   }
 
-  def toJTS(geometry: Any): Geometry = {
+  def toGeometry(geometry: Any): Geometry = {
     GeometryUDT.deserialize(geometry)
+  }
+
+  override def fromGeography(geography: Geography): AnyRef = {
+    GeometryUDT.serialize(geography.geometry()).asInstanceOf[AnyRef]
+  }
+
+  override def toGeography(geography: Any): Geography = {
+    new Geography(GeometryUDT.deserialize(geography))
   }
 
   def isSpatialFilter(sparkExpression: Expression): Boolean = {

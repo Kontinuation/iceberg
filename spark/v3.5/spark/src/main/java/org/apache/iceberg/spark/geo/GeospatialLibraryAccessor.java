@@ -29,12 +29,44 @@ public class GeospatialLibraryAccessor {
 
   private static final GeospatialLibrary INSTANCE = load();
 
-  public static GeospatialLibrary getGeospatialLibrary() {
-    return INSTANCE;
-  }
-
   public static boolean isGeospatialLibraryAvailable() {
     return INSTANCE != null;
+  }
+
+  public static boolean isGeometryTypeAvailable() {
+    return isGeospatialLibraryAvailable() && INSTANCE.getGeometryType() != null;
+  }
+
+  public static boolean isGeographyTypeAvailable() {
+    return isGeospatialLibraryAvailable() && INSTANCE.getGeographyType() != null;
+  }
+
+  public static void assertGeometryTypeAvailable() {
+    if (INSTANCE == null) {
+      throw new UnsupportedOperationException(
+          "Geometry type is not available. Please provide an implementation of "
+              + GeospatialLibraryProvider.class.getName()
+              + " to use geometry type");
+    }
+    if (!isGeometryTypeAvailable()) {
+      throw new UnsupportedOperationException(
+          "Geometry type is not supported by the GeospatialLibraryProvider: "
+              + INSTANCE.getClass().getName());
+    }
+  }
+
+  public static void assertGeographyTypeAvailable() {
+    if (INSTANCE == null) {
+      throw new UnsupportedOperationException(
+          "Geography type is not available. Please provide an implementation of "
+              + GeospatialLibraryProvider.class.getName()
+              + " to use geography type");
+    }
+    if (!isGeographyTypeAvailable()) {
+      throw new UnsupportedOperationException(
+          "Geography type is not supported by the GeospatialLibraryProvider: "
+              + INSTANCE.getClass().getName());
+    }
   }
 
   public static DataType getGeometryType() {
@@ -42,14 +74,29 @@ public class GeospatialLibraryAccessor {
     return INSTANCE.getGeometryType();
   }
 
-  public static Object fromJTS(Geometry jtsGeometry) {
+  public static DataType getGeographyType() {
     checkGeospatialLibrary();
-    return INSTANCE.fromJTS(jtsGeometry);
+    return INSTANCE.getGeographyType();
   }
 
-  public static Geometry toJTS(Object geometry) {
+  public static Object fromGeometry(Geometry jtsGeometry) {
     checkGeospatialLibrary();
-    return INSTANCE.toJTS(geometry);
+    return INSTANCE.fromGeometry(jtsGeometry);
+  }
+
+  public static Geometry toGeometry(Object geometry) {
+    checkGeospatialLibrary();
+    return INSTANCE.toGeometry(geometry);
+  }
+
+  public static Object fromGeography(org.apache.iceberg.Geography icebergGeography) {
+    checkGeospatialLibrary();
+    return INSTANCE.fromGeography(icebergGeography);
+  }
+
+  public static org.apache.iceberg.Geography toGeography(Object geography) {
+    checkGeospatialLibrary();
+    return INSTANCE.toGeography(geography);
   }
 
   public static boolean isSpatialFilter(

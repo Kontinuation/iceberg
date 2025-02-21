@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.iceberg.Geography;
+import org.apache.iceberg.parquet.ParquetGeographyValueWriters;
 import org.apache.iceberg.parquet.ParquetGeometryValueWriters;
 import org.apache.iceberg.parquet.ParquetValueReaders.ReusableEntry;
 import org.apache.iceberg.parquet.ParquetValueWriter;
@@ -251,6 +253,12 @@ public class SparkParquetWriters {
           LogicalTypeAnnotation.GeometryLogicalTypeAnnotation geometryLogicalType) {
         return Optional.of(new SparkGeometryWriter(desc));
       }
+
+      @Override
+      public Optional<ParquetValueWriter<?>> visit(
+          LogicalTypeAnnotation.GeographyLogicalTypeAnnotation geographyLogicalType) {
+        return Optional.of(new SparkGeographyWriter(desc));
+      }
     }
 
     @Override
@@ -457,8 +465,21 @@ public class SparkParquetWriters {
 
     @Override
     public void write(int repetitionLevel, Object data) {
-      Geometry geom = GeospatialLibraryAccessor.toJTS(data);
+      Geometry geom = GeospatialLibraryAccessor.toGeometry(data);
       delegate.write(repetitionLevel, geom);
+    }
+  }
+
+  private static class SparkGeographyWriter
+      extends ParquetValueWriters.DelegateParquetValueWriter<Object, Geography> {
+    private SparkGeographyWriter(ColumnDescriptor desc) {
+      super(ParquetGeographyValueWriters.buildWriter(desc));
+    }
+
+    @Override
+    public void write(int repetitionLevel, Object data) {
+      Geography geo = GeospatialLibraryAccessor.toGeography(data);
+      delegate.write(repetitionLevel, geo);
     }
   }
 
