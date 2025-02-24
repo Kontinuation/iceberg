@@ -176,7 +176,7 @@ class IcebergSparkSqlExtensionsParser(delegate: ParserInterface) extends ParserI
       normalized.contains("add column") ||
         normalized.contains("alter column") ||
         normalized.contains("replace column")))
-    isDDL && normalized.contains("geometry")
+    isDDL && (normalized.contains("geometry") || normalized.contains("geography"))
   }
 
   private def isSnapshotRefDdl(normalized: String): Boolean = {

@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.iceberg.ParameterizedTestExtension;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
+import org.apache.iceberg.spark.geo.testing.GeographyUDT$;
 import org.apache.iceberg.spark.geo.testing.GeometryUDT$;
+import org.apache.iceberg.spark.geo.testing.TestGeography;
 import org.apache.iceberg.spark.geo.testing.TestingGeospatialLibraryInitializer;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -59,13 +61,12 @@ public class TestGeospatialTable extends ExtensionsTestBase {
   }
 
   @TestTemplate
-  public void testCreateGeospatialTable() {
+  public void testCreateGeometryTable() {
     sql("DROP TABLE IF EXISTS %s", tableName);
     sql(
         "CREATE TABLE %s (id INT, part INT, geom GEOMETRY) USING iceberg PARTITIONED BY (part) TBLPROPERTIES ('format-version' = '3')",
         tableName);
 
-    // Make sure that the table provider is iceberg for compatibility with open-source iceberg
     Object createTableStmt = scalarSql("SHOW CREATE TABLE %s", tableName);
     assertThat(createTableStmt.toString().contains("USING iceberg")).isTrue();
     List<Object[]> tableDesc = sql("DESCRIBE TABLE EXTENDED %s", tableName);
@@ -74,7 +75,7 @@ public class TestGeospatialTable extends ExtensionsTestBase {
         .forEach(row -> assertThat(row[1]).isEqualTo("iceberg"));
 
     // write some data
-    Dataset<Row> df = createTestDf();
+    Dataset<Row> df = createTestGeometryDf();
     df.write().format("iceberg").mode("append").save(tableName);
     List<Object[]> rows = sql("SELECT * FROM %s", tableName);
     assertThat(rows.size()).isEqualTo(40);
@@ -111,7 +112,7 @@ public class TestGeospatialTable extends ExtensionsTestBase {
     sql(
         "CREATE TABLE %s (id INT, part INT, geom GEOMETRY) USING iceberg PARTITIONED BY (part) TBLPROPERTIES ('format-version' = '3')",
         tableName);
-    Dataset<Row> df = createTestDf();
+    Dataset<Row> df = createTestGeometryDf();
     df.write().format("iceberg").mode("append").save(tableName);
     sql(
         "UPDATE %s SET geom = ST_Buffer(geom, 0.5) WHERE ST_Intersects(geom, ST_PolygonFromEnvelope(0, 0, 4.5, 4.5))",
@@ -130,7 +131,39 @@ public class TestGeospatialTable extends ExtensionsTestBase {
         });
   }
 
-  private Dataset<Row> createTestDf() {
+  @TestTemplate
+  public void testGeographyTable() {
+    sql("DROP TABLE IF EXISTS %s", tableName);
+    sql(
+        "CREATE TABLE %s (id INT, part INT, geog GEOGRAPHY) USING iceberg PARTITIONED BY (part) TBLPROPERTIES ('format-version' = '3')",
+        tableName);
+
+    Object createTableStmt = scalarSql("SHOW CREATE TABLE %s", tableName);
+    assertThat(createTableStmt.toString().contains("USING iceberg")).isTrue();
+    List<Object[]> tableDesc = sql("DESCRIBE TABLE EXTENDED %s", tableName);
+    tableDesc.stream()
+        .filter(row -> row[0].equals("Provider"))
+        .forEach(row -> assertThat(row[1]).isEqualTo("iceberg"));
+
+    // write some data
+    Dataset<Row> df = createTestGeographyDf();
+    df.write().format("iceberg").mode("append").save(tableName);
+    List<Object[]> rows = sql("SELECT * FROM %s", tableName);
+    assertThat(rows.size()).isEqualTo(40);
+    rows.forEach(
+        row -> {
+          assertThat(row.length).isEqualTo(3);
+          assertThat(row[2]).isInstanceOf(TestGeography.class);
+          int id = (int) row[0];
+          int part = (int) row[1];
+          TestGeography geog = (TestGeography) row[2];
+          Coordinate coordinate = geog.geometry().getCoordinate();
+          assertThat(coordinate.x).isEqualTo(id % 10);
+          assertThat(coordinate.y).isEqualTo(id % 10 + part);
+        });
+  }
+
+  private Dataset<Row> createTestGeometryDf() {
     List<Row> rows = Lists.newArrayList();
     int id = 0;
     for (int i = 0; i < 4; i++) {
@@ -160,6 +193,27 @@ public class TestGeospatialTable extends ExtensionsTestBase {
               new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
               new StructField("part", DataTypes.IntegerType, false, Metadata.empty()),
               new StructField("geom", GeometryUDT$.MODULE$, false, Metadata.empty())
+            });
+    return spark.createDataFrame(rows, schema);
+  }
+
+  private Dataset<Row> createTestGeographyDf() {
+    List<Row> rows = Lists.newArrayList();
+    int id = 0;
+    for (int i = 0; i < 4; i++) {
+      for (int k = 0; k < 10; k++) {
+        Coordinate coordinate = new Coordinate(k, k + i);
+        TestGeography geography = TestGeography.apply(FACTORY.createPoint(coordinate));
+        Row row = new GenericRow(new Object[] {id++, i, geography});
+        rows.add(row);
+      }
+    }
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
+              new StructField("part", DataTypes.IntegerType, false, Metadata.empty()),
+              new StructField("geog", GeographyUDT$.MODULE$, false, Metadata.empty())
             });
     return spark.createDataFrame(rows, schema);
   }

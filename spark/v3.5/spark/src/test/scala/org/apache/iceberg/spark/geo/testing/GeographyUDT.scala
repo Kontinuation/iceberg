@@ -22,33 +22,32 @@ import org.apache.iceberg.util.GeometryUtil
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.UserDefinedType
-import org.locationtech.jts.geom.Geometry
 
-/** A Geometry UDT for testing the geospatial library integration support in Iceberg Spark. */
-class GeometryUDT extends UserDefinedType[Geometry] {
+/** A Geography UDT for testing the geospatial library integration support in Iceberg Spark. */
+class GeographyUDT extends UserDefinedType[TestGeography] {
 
   def sqlType(): DataType = DataTypes.BinaryType
 
-  def serialize(obj: Geometry): Any = GeometryUtil.toWKB(obj)
+  def serialize(obj: TestGeography): Any = GeometryUtil.toWKB(obj.geometry)
 
-  def deserialize(datum: Any): Geometry = {
+  def deserialize(datum: Any): TestGeography = {
     datum match {
-      case bytes: Array[Byte] => GeometryUtil.fromWKB(bytes)
+      case bytes: Array[Byte] => TestGeography(GeometryUtil.fromWKB(bytes))
       case _ => throw new IllegalArgumentException(
-        s"Expected Array[Byte] object but got ${datum.getClass.getName}")
+        s"Expected an Array[Byte] object but got ${datum.getClass.getName}")
     }
   }
 
-  def userClass: Class[Geometry] = {
-    classOf[Geometry]
+  def userClass: Class[TestGeography] = {
+    classOf[TestGeography]
   }
 
   override def equals(other: Any): Boolean = other match {
-    case _: UserDefinedType[_] => other.isInstanceOf[GeometryUDT]
+    case _: UserDefinedType[_] => other.isInstanceOf[GeographyUDT]
     case _ => false
   }
 
   override def hashCode(): Int = userClass.hashCode()
 }
 
-object GeometryUDT extends GeometryUDT
+object GeographyUDT extends GeographyUDT

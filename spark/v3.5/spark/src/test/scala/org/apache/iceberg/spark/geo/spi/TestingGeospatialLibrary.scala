@@ -20,10 +20,12 @@ package org.apache.iceberg.spark.geo.spi
 
 import org.apache.iceberg.Geography
 import org.apache.iceberg.expressions.{Expressions => IcebergExpressions}
+import org.apache.iceberg.spark.geo.testing.GeographyUDT
 import org.apache.iceberg.spark.geo.testing.GeometryUDT
 import org.apache.iceberg.spark.geo.testing.ST_Covers
 import org.apache.iceberg.spark.geo.testing.ST_Intersects
 import org.apache.iceberg.spark.geo.testing.ST_Predicate
+import org.apache.iceberg.spark.geo.testing.TestGeography
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.execution.datasources.PushableColumn
@@ -37,7 +39,7 @@ class TestingGeospatialLibrary extends GeospatialLibrary {
   }
 
   override def getGeographyType: DataType = {
-    GeometryUDT
+    GeographyUDT
   }
 
   def fromGeometry(geometry: Geometry): AnyRef = {
@@ -49,11 +51,12 @@ class TestingGeospatialLibrary extends GeospatialLibrary {
   }
 
   override def fromGeography(geography: Geography): AnyRef = {
-    GeometryUDT.serialize(geography.geometry()).asInstanceOf[AnyRef]
+    GeographyUDT.serialize(TestGeography(geography.geometry())).asInstanceOf[AnyRef]
   }
 
   override def toGeography(geography: Any): Geography = {
-    new Geography(GeometryUDT.deserialize(geography))
+    val testGeography = GeographyUDT.deserialize(geography)
+    new Geography(testGeography.geometry)
   }
 
   def isSpatialFilter(sparkExpression: Expression): Boolean = {

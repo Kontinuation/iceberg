@@ -171,7 +171,8 @@ class SparkBatch implements Batch {
   private boolean supportsParquetBatchReads(Types.NestedField field) {
     // TODO(poc-geo): currently we don't support batched reads of geometry columns, we'll
     // add this in the future.
-    if (field.type().typeId() == Type.TypeID.GEOMETRY) {
+    if (field.type().typeId() == Type.TypeID.GEOMETRY
+        || field.type().typeId() == Type.TypeID.GEOGRAPHY) {
       return false;
     }
     return field.type().isPrimitiveType() || MetadataColumns.isMetadataColumn(field.fieldId());

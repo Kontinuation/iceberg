@@ -167,6 +167,7 @@ public final class HiveSchemaUtil {
       case FIXED:
       case BINARY:
       case GEOMETRY:
+      case GEOGRAPHY:
         return "binary";
       case DECIMAL:
         final Types.DecimalType decimalType = (Types.DecimalType) type;

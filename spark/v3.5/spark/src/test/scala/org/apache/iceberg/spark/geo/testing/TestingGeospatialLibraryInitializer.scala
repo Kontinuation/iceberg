@@ -30,6 +30,7 @@ import scala.reflect.ClassTag
 object TestingGeospatialLibraryInitializer {
   def initialize(spark: SparkSession): Unit = {
     UDTRegistration.register(classOf[Geometry].getName, classOf[GeometryUDT].getName)
+    UDTRegistration.register(classOf[TestGeography].getName, classOf[GeographyUDT].getName)
     registerFunction(spark, args => ST_Intersects(args.head, args.last))
     registerFunction(spark, args => ST_Covers(args.head, args.last))
     registerFunction(spark, ST_PolygonFromEnvelope)
