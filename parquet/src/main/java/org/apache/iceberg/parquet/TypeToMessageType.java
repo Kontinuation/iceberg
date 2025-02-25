@@ -26,7 +26,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 
-import java.util.Locale;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.avro.AvroSchemaUtil;
 import org.apache.iceberg.types.Type.NestedType;
@@ -41,6 +40,7 @@ import org.apache.iceberg.types.Types.MapType;
 import org.apache.iceberg.types.Types.NestedField;
 import org.apache.iceberg.types.Types.StructType;
 import org.apache.iceberg.types.Types.TimestampType;
+import org.apache.parquet.column.statistics.geometry.EdgeInterpolationAlgorithm;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit;
@@ -169,14 +169,34 @@ public class TypeToMessageType {
             .id(id)
             .named(name);
       case GEOGRAPHY:
-        GeographyType geographyType = ((GeographyType) primitive);
-        return Types.primitive(BINARY, repetition)
-            .as(
-                LogicalTypeAnnotation.geographyType(
-                    geographyType.crs(),
-                    geographyType.algorithm().value().toUpperCase(Locale.ROOT)))
-            .id(id)
-            .named(name);
+        {
+          GeographyType geographyType = ((GeographyType) primitive);
+          EdgeInterpolationAlgorithm algorithm;
+          switch (geographyType.algorithm()) {
+            case SPHERICAL:
+              algorithm = EdgeInterpolationAlgorithm.SPHERICAL;
+              break;
+            case VINCENTY:
+              algorithm = EdgeInterpolationAlgorithm.VINCENTY;
+              break;
+            case THOMAS:
+              algorithm = EdgeInterpolationAlgorithm.THOMAS;
+              break;
+            case ANDOYER:
+              algorithm = EdgeInterpolationAlgorithm.ANDOYER;
+              break;
+            case KARNEY:
+              algorithm = EdgeInterpolationAlgorithm.KARNEY;
+              break;
+            default:
+              throw new UnsupportedOperationException(
+                  "Unsupported edge interpolation algorithm: " + geographyType.algorithm());
+          }
+          return Types.primitive(BINARY, repetition)
+              .as(LogicalTypeAnnotation.geographyType(geographyType.crs(), algorithm))
+              .id(id)
+              .named(name);
+        }
       case FIXED:
         FixedType fixed = (FixedType) primitive;
 

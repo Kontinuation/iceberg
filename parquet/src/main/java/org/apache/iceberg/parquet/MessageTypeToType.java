@@ -22,10 +22,10 @@ import static org.apache.iceberg.types.Types.NestedField.optional;
 import static org.apache.iceberg.types.Types.NestedField.required;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import org.apache.iceberg.Geography;
 import org.apache.iceberg.relocated.com.google.common.base.Joiner;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
@@ -254,8 +254,28 @@ class MessageTypeToType extends ParquetTypeVisitor<Type> {
     public Optional<Type> visit(
         LogicalTypeAnnotation.GeographyLogicalTypeAnnotation geographyType) {
       String crs = geographyType.getCrs();
-      String algorithm = geographyType.getEdgeAlgorithm();
-      return Optional.of(Types.GeographyType.of(crs, algorithm.toLowerCase(Locale.ROOT)));
+      Geography.EdgeInterpolationAlgorithm algorithm;
+      switch (geographyType.getEdgeAlgorithm()) {
+        case SPHERICAL:
+          algorithm = Geography.EdgeInterpolationAlgorithm.SPHERICAL;
+          break;
+        case VINCENTY:
+          algorithm = Geography.EdgeInterpolationAlgorithm.VINCENTY;
+          break;
+        case THOMAS:
+          algorithm = Geography.EdgeInterpolationAlgorithm.THOMAS;
+          break;
+        case ANDOYER:
+          algorithm = Geography.EdgeInterpolationAlgorithm.ANDOYER;
+          break;
+        case KARNEY:
+          algorithm = Geography.EdgeInterpolationAlgorithm.KARNEY;
+          break;
+        default:
+          throw new UnsupportedOperationException(
+              "Unsupported edge interpolation algorithm: " + geographyType.getEdgeAlgorithm());
+      }
+      return Optional.of(Types.GeographyType.of(crs, algorithm));
     }
   }
 

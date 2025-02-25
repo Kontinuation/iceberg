@@ -56,7 +56,6 @@ import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.EncodingStats;
 import org.apache.parquet.column.page.DictionaryPage;
 import org.apache.parquet.column.page.PageReader;
-import org.apache.parquet.column.statistics.BinaryStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.column.statistics.geometry.BoundingBox;
 import org.apache.parquet.column.statistics.geometry.GeospatialStatistics;
@@ -151,10 +150,9 @@ public class ParquetUtil {
             if (field != null && stats.hasNonNullValue() && shouldStoreBounds(column, fileSchema)) {
               Type.TypeID typeId = field.type().typeId();
               if (typeId == Type.TypeID.GEOMETRY || typeId == Type.TypeID.GEOGRAPHY) {
-                BinaryStatistics binaryStats = (BinaryStatistics) stats;
-                GeospatialStatistics geometryStats = binaryStats.getGeospatialStatistics();
-                if (geometryStats != null) {
-                  BoundingBox boundingBox = geometryStats.getBoundingBox();
+                GeospatialStatistics geospatialStatistics = column.getGeospatialStatistics();
+                if (geospatialStatistics != null) {
+                  BoundingBox boundingBox = geospatialStatistics.getBoundingBox();
                   updateGeometryBounds(typeId, lowerBounds, upperBounds, fieldId, boundingBox);
                 }
               } else {
