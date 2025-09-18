@@ -181,11 +181,6 @@ public class TestExpressionSerialization {
       return lpred.literal().comparator().compare(lpred.literal().value(), rpred.literal().value())
           == 0;
 
-    } else if (left instanceof BoundGeospatialPredicate) {
-      BoundGeospatialPredicate lpred = (BoundGeospatialPredicate) left;
-      BoundGeospatialPredicate rpred = (BoundGeospatialPredicate) right;
-      return lpred.isEquivalentTo(rpred);
-
     } else if (left instanceof BoundPredicate) {
       BoundPredicate lpred = (BoundPredicate) left;
       BoundPredicate rpred = (BoundPredicate) right;

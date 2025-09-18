@@ -121,6 +121,20 @@ public class TestBoundingBox {
     GeospatialBound min = GeospatialBound.createXY(1.0, 2.0);
     GeospatialBound max = GeospatialBound.createXY(3.0, 4.0);
     BoundingBox box = new BoundingBox(min, max);
-    assertThat(box.toString()).isEqualTo("BoundingBox{min=x=1.0, y=2.0, max=x=3.0, y=4.0}");
+    assertThat(box.toString()).isEqualTo("BoundingBox{min={x=1.0, y=2.0}, max={x=3.0, y=4.0}}");
+  }
+
+  @Test
+  public void testRoundTripSerDe() {
+    GeospatialBound min = GeospatialBound.createXY(1.0, 2.0);
+    GeospatialBound max = GeospatialBound.createXY(3.0, 4.0);
+    BoundingBox original = new BoundingBox(min, max);
+    BoundingBox deserialized = roundTripSerDe(original);
+    assertThat(deserialized).isEqualTo(original);
+  }
+
+  private BoundingBox roundTripSerDe(BoundingBox original) {
+    ByteBuffer buffer = original.toByteBuffer();
+    return BoundingBox.fromByteBuffer(buffer);
   }
 }

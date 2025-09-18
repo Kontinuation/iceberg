@@ -437,13 +437,11 @@ public class TestExpressionBinding {
         Expressions.geospatialPredicate(Expression.Operation.ST_INTERSECTS, "point", bbox);
     Expression bound = Binder.bind(STRUCT, expr);
 
-    TestHelpers.assertAllReferencesBound("BoundGeospatialPredicate", bound);
+    TestHelpers.assertAllReferencesBound("ST_Intersects", bound);
     BoundPredicate<?> pred = TestHelpers.assertAndUnwrap(bound);
     assertThat(pred.op()).isEqualTo(Expression.Operation.ST_INTERSECTS);
     assertThat(pred.term().ref().fieldId()).as("Should bind point correctly").isEqualTo(7);
-    assertThat(bound).isInstanceOf(BoundGeospatialPredicate.class);
-    BoundGeospatialPredicate predicate = (BoundGeospatialPredicate) bound;
-    assertThat(predicate.literal().value()).isEqualTo(bbox);
+    assertThat(pred.asLiteralPredicate().literal().value()).isEqualTo(bbox.toByteBuffer());
   }
 
   @Test
@@ -457,34 +455,10 @@ public class TestExpressionBinding {
         Expressions.geospatialPredicate(Expression.Operation.ST_DISJOINT, "geography", bbox);
     Expression bound = Binder.bind(STRUCT, expr);
 
-    TestHelpers.assertAllReferencesBound("BoundGeospatialPredicate", bound);
+    TestHelpers.assertAllReferencesBound("ST_Disjoint", bound);
     BoundPredicate<?> pred = TestHelpers.assertAndUnwrap(bound);
     assertThat(pred.op()).isEqualTo(Expression.Operation.ST_DISJOINT);
     assertThat(pred.term().ref().fieldId()).as("Should bind geography correctly").isEqualTo(8);
-    assertThat(bound).isInstanceOf(BoundGeospatialPredicate.class);
-    BoundGeospatialPredicate predicate = (BoundGeospatialPredicate) bound;
-    assertThat(predicate.literal().value()).isEqualTo(bbox);
-  }
-
-  @Test
-  public void testGeospatialPredicateWithInvalidField() {
-    // Create a bounding box for testing
-    GeospatialBound min = GeospatialBound.createXY(1.0, 2.0);
-    GeospatialBound max = GeospatialBound.createXY(3.0, 4.0);
-    BoundingBox bbox = new BoundingBox(min, max);
-
-    // Test with a field that doesn't exist
-    Expression expr =
-        Expressions.geospatialPredicate(Expression.Operation.ST_INTERSECTS, "nonexistent", bbox);
-    assertThatThrownBy(() -> Binder.bind(STRUCT, expr))
-        .isInstanceOf(ValidationException.class)
-        .hasMessageContaining("Cannot find field 'nonexistent' in struct");
-
-    // Test with a field that is not a geometry or geography type
-    Expression expr2 =
-        Expressions.geospatialPredicate(Expression.Operation.ST_INTERSECTS, "x", bbox);
-    assertThatThrownBy(() -> Binder.bind(STRUCT, expr2))
-        .isInstanceOf(ValidationException.class)
-        .hasMessageContaining("Cannot bind geospatial operation to non-geospatial type");
+    assertThat(pred.asLiteralPredicate().literal().value()).isEqualTo(bbox.toByteBuffer());
   }
 }

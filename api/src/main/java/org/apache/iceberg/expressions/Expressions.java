@@ -209,18 +209,8 @@ public class Expressions {
   }
 
   public static UnboundPredicate<ByteBuffer> stIntersects(
-      String name, ByteBuffer min, ByteBuffer max) {
-    return geospatialPredicate(Operation.ST_INTERSECTS, name, min, max);
-  }
-
-  public static UnboundPredicate<ByteBuffer> stIntersects(
       UnboundTerm<ByteBuffer> expr, BoundingBox value) {
     return geospatialPredicate(Operation.ST_INTERSECTS, expr, value);
-  }
-
-  public static UnboundPredicate<ByteBuffer> stIntersects(
-      UnboundTerm<ByteBuffer> expr, ByteBuffer min, ByteBuffer max) {
-    return geospatialPredicate(Operation.ST_INTERSECTS, expr, min, max);
   }
 
   public static UnboundPredicate<ByteBuffer> stDisjoint(String name, BoundingBox value) {
@@ -228,18 +218,8 @@ public class Expressions {
   }
 
   public static UnboundPredicate<ByteBuffer> stDisjoint(
-      String name, ByteBuffer min, ByteBuffer max) {
-    return geospatialPredicate(Operation.ST_DISJOINT, name, min, max);
-  }
-
-  public static UnboundPredicate<ByteBuffer> stDisjoint(
       UnboundTerm<ByteBuffer> expr, BoundingBox value) {
     return geospatialPredicate(Operation.ST_DISJOINT, expr, value);
-  }
-
-  public static UnboundPredicate<ByteBuffer> stDisjoint(
-      UnboundTerm<ByteBuffer> expr, ByteBuffer min, ByteBuffer max) {
-    return geospatialPredicate(Operation.ST_DISJOINT, expr, min, max);
   }
 
   public static <T> UnboundPredicate<T> in(String name, T... values) {
@@ -322,23 +302,12 @@ public class Expressions {
 
   public static UnboundPredicate<ByteBuffer> geospatialPredicate(
       Operation op, String name, BoundingBox value) {
-    return geospatialPredicate(
-        op, ref(name), value.min().toByteBuffer(), value.max().toByteBuffer());
+    return geospatialPredicate(op, ref(name), value);
   }
 
   public static UnboundPredicate<ByteBuffer> geospatialPredicate(
       Operation op, UnboundTerm<ByteBuffer> expr, BoundingBox value) {
-    return geospatialPredicate(op, expr, value.min().toByteBuffer(), value.max().toByteBuffer());
-  }
-
-  public static UnboundPredicate<ByteBuffer> geospatialPredicate(
-      Operation op, String name, ByteBuffer min, ByteBuffer max) {
-    return geospatialPredicate(op, ref(name), min, max);
-  }
-
-  public static UnboundPredicate<ByteBuffer> geospatialPredicate(
-      Operation op, UnboundTerm<ByteBuffer> expr, ByteBuffer min, ByteBuffer max) {
-    return new UnboundPredicate<>(op, expr, Lists.newArrayList(min, max));
+    return new UnboundPredicate<>(op, expr, Literal.of(value));
   }
 
   public static True alwaysTrue() {

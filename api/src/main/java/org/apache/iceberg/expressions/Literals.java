@@ -87,7 +87,7 @@ class Literals {
     } else if (value instanceof Variant) {
       return (Literal<T>) new Literals.VariantLiteral((Variant) value);
     } else if (value instanceof BoundingBox) {
-      return (Literal<T>) new Literals.GeospatialBoundingBoxLiteral((BoundingBox) value);
+      return (Literal<T>) new Literals.BoundingBoxLiteral((BoundingBox) value);
     }
 
     throw new IllegalArgumentException(
@@ -723,29 +723,39 @@ class Literals {
     }
   }
 
-  static class GeospatialBoundingBoxLiteral implements Literal<BoundingBox> {
-    private static final Comparator<BoundingBox> CMP =
-        Comparators.<BoundingBox>nullsFirst().thenComparing(Comparator.naturalOrder());
+  static class BoundingBoxLiteral extends BaseLiteral<ByteBuffer> {
+    private static final Comparator<ByteBuffer> CMP =
+        Comparators.<ByteBuffer>nullsFirst().thenComparing(Comparators.unsignedBytes());
 
-    private final BoundingBox value;
+    BoundingBoxLiteral(BoundingBox value) {
+      super(value.toByteBuffer());
+    }
 
-    GeospatialBoundingBoxLiteral(BoundingBox value) {
-      this.value = value;
+    BoundingBoxLiteral(ByteBuffer value) {
+      super(value);
     }
 
     @Override
-    public BoundingBox value() {
-      return value;
-    }
-
-    @Override
-    public <T> Literal<T> to(Type type) {
+    protected Type.TypeID typeId() {
       return null;
     }
 
     @Override
-    public Comparator<BoundingBox> comparator() {
+    public <T> Literal<T> to(Type type) {
+      if (type.typeId() != Type.TypeID.GEOMETRY && type.typeId() != Type.TypeID.GEOGRAPHY) {
+        return null;
+      }
+
+      return (Literal<T>) this;
+    }
+
+    @Override
+    public Comparator<ByteBuffer> comparator() {
       return CMP;
+    }
+
+    Object writeReplace() throws ObjectStreamException {
+      return new SerializationProxies.BoundingBoxLiteralProxy(value());
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.SingleValueParser;
+import org.apache.iceberg.expressions.Expression.Operation;
 import org.apache.iceberg.geospatial.BoundingBox;
 import org.apache.iceberg.geospatial.GeospatialBound;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
@@ -161,17 +162,19 @@ public class ExpressionParser {
 
             if (pred.isLiteralPredicate()) {
               gen.writeFieldName(VALUE);
-              SingleValueParser.toJson(
-                  pred.term().type(), pred.asLiteralPredicate().literal().value(), gen);
+              if (pred.op() == Operation.ST_INTERSECTS || pred.op() == Operation.ST_DISJOINT) {
+                ByteBuffer value = (ByteBuffer) pred.asLiteralPredicate().literal().value();
+                geospatialBoundingBox(BoundingBox.fromByteBuffer(value));
+              } else {
+                SingleValueParser.toJson(
+                    pred.term().type(), pred.asLiteralPredicate().literal().value(), gen);
+              }
             } else if (pred.isSetPredicate()) {
               gen.writeArrayFieldStart(VALUES);
               for (T value : pred.asSetPredicate().literalSet()) {
                 SingleValueParser.toJson(pred.term().type(), value, gen);
               }
               gen.writeEndArray();
-            } else if (pred.isGeospatialPredicate()) {
-              gen.writeFieldName(VALUE);
-              geospatialBoundingBox(pred.asGeospatialPredicate().literal().value());
             }
 
             gen.writeEndObject();
@@ -200,10 +203,8 @@ public class ExpressionParser {
               } else if (pred.op() == Expression.Operation.ST_INTERSECTS
                   || pred.op() == Expression.Operation.ST_DISJOINT) {
                 gen.writeFieldName(VALUE);
-                Literal<ByteBuffer> min = pred.literals().get(0).to(Types.BinaryType.get());
-                Literal<ByteBuffer> max = pred.literals().get(1).to(Types.BinaryType.get());
-                BoundingBox bbox = BoundingBox.fromByteBuffers(min.value(), max.value());
-                geospatialBoundingBox(bbox);
+                ByteBuffer value = (ByteBuffer) pred.literal().value();
+                geospatialBoundingBox(BoundingBox.fromByteBuffer(value));
               } else {
                 gen.writeFieldName(VALUE);
                 unboundLiteral(pred.literal().value());

@@ -18,7 +18,6 @@
  */
 package org.apache.iceberg.expressions;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -35,7 +34,7 @@ import java.util.stream.StreamSupport;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.geospatial.BoundingBox;
+import org.apache.iceberg.expressions.Literals.BoundingBoxLiteral;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableSet;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.transforms.Transforms;
@@ -320,10 +319,6 @@ public class ExpressionUtil {
                     .map(lit -> (T) sanitize(bound.term().type(), lit, now, today))
                     .iterator();
         return new UnboundPredicate<>(pred.op(), unbind(pred.term()), iter);
-      } else if (pred.isGeospatialPredicate()) {
-        BoundGeospatialPredicate bound = (BoundGeospatialPredicate) pred;
-        return Expressions.geospatialPredicate(
-            pred.op(), unbind(bound.term()), BoundingBox.empty());
       }
 
       throw new UnsupportedOperationException("Cannot sanitize bound predicate type: " + pred.op());
@@ -347,12 +342,10 @@ public class ExpressionUtil {
         case NOT_EQ:
         case STARTS_WITH:
         case NOT_STARTS_WITH:
-          return new UnboundPredicate<>(
-              pred.op(), pred.term(), (T) sanitize(pred.literal(), now, today));
         case ST_INTERSECTS:
         case ST_DISJOINT:
-          return Expressions.geospatialPredicate(
-              pred.op(), (UnboundTerm<ByteBuffer>) pred.term(), BoundingBox.empty());
+          return new UnboundPredicate<>(
+              pred.op(), pred.term(), (T) sanitize(pred.literal(), now, today));
         case IN:
         case NOT_IN:
           Iterable<T> iter =
@@ -451,6 +444,10 @@ public class ExpressionUtil {
           return term + " STARTS WITH " + value((BoundLiteralPredicate<?>) pred);
         case NOT_STARTS_WITH:
           return term + " NOT STARTS WITH " + value((BoundLiteralPredicate<?>) pred);
+        case ST_INTERSECTS:
+          return "st_intersects(" + term + ", " + value((BoundLiteralPredicate<?>) pred) + ")";
+        case ST_DISJOINT:
+          return "st_disjoint(" + term + ", " + value((BoundLiteralPredicate<?>) pred) + ")";
         default:
           throw new UnsupportedOperationException(
               "Cannot sanitize unsupported predicate type: " + pred.op());
@@ -504,9 +501,9 @@ public class ExpressionUtil {
         case NOT_STARTS_WITH:
           return term + " NOT STARTS WITH " + sanitize(pred.literal(), nowMicros, today);
         case ST_INTERSECTS:
-          return term + " ST_INTERSECTS WITH (bounding-box)";
+          return "st_intersects(" + term + ", " + sanitize(pred.literal(), nowMicros, today) + ")";
         case ST_DISJOINT:
-          return term + " ST_DISJOINT WITH (bounding-box)";
+          return "st_disjoint(" + term + ", " + sanitize(pred.literal(), nowMicros, today) + ")";
         default:
           throw new UnsupportedOperationException(
               "Cannot sanitize unsupported predicate type: " + pred.op());
@@ -566,6 +563,9 @@ public class ExpressionUtil {
       case BINARY:
         // for boolean, uuid, decimal, fixed, unknown, and binary, match the string result
         return sanitizeSimpleString(value.toString());
+      case GEOMETRY:
+      case GEOGRAPHY:
+        return "(bounding-box)";
     }
     throw new UnsupportedOperationException(
         String.format("Cannot sanitize value for unsupported type %s: %s", type, value));
@@ -593,6 +593,8 @@ public class ExpressionUtil {
       return sanitizeNumber(((Literals.DoubleLiteral) literal).value(), "float");
     } else if (literal instanceof Literals.VariantLiteral) {
       return sanitizeVariant(((Literals.VariantLiteral) literal).value(), now, today);
+    } else if (literal instanceof BoundingBoxLiteral) {
+      return "(bounding-box)";
     } else {
       // for uuid, decimal, fixed and binary, match the string result
       return sanitizeSimpleString(literal.value().toString());

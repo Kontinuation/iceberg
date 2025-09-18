@@ -20,6 +20,7 @@ package org.apache.iceberg.geospatial;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Objects;
 
 /**
@@ -29,7 +30,7 @@ import java.util.Objects;
  * minimum and maximum coordinates that define the box's corners. This provides a simple
  * approximation of a more complex geometry for efficient filtering and data skipping.
  */
-public class BoundingBox implements Serializable, Comparable<BoundingBox> {
+public class BoundingBox implements Serializable {
   /**
    * Create a {@link BoundingBox} object from buffers containing min and max bounds
    *
@@ -40,6 +41,36 @@ public class BoundingBox implements Serializable, Comparable<BoundingBox> {
   public static BoundingBox fromByteBuffers(ByteBuffer min, ByteBuffer max) {
     return new BoundingBox(
         GeospatialBound.fromByteBuffer(min), GeospatialBound.fromByteBuffer(max));
+  }
+
+  /**
+   * Deserialize a byte buffer as a {@link BoundingBox} object
+   *
+   * @param buffer the serialized bounding box
+   * @return a BoundingBox instance
+   */
+  public static BoundingBox fromByteBuffer(ByteBuffer buffer) {
+    int originalPosition = buffer.position();
+    ByteOrder originalOrder = buffer.order();
+
+    try {
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+      int minLen = buffer.getInt();
+      ByteBuffer min = buffer.slice();
+      min.limit(minLen);
+      buffer.position(buffer.position() + minLen);
+
+      int maxLen = buffer.getInt();
+      ByteBuffer max = buffer.slice();
+      max.limit(maxLen);
+
+      return fromByteBuffers(min, max);
+    } finally {
+      // Restore original position and byte order
+      buffer.position(originalPosition);
+      buffer.order(originalOrder);
+    }
   }
 
   /**
@@ -79,6 +110,27 @@ public class BoundingBox implements Serializable, Comparable<BoundingBox> {
     return max;
   }
 
+  /**
+   * Serializes this bounding box to a byte buffer. The serialized byte buffer could be deserialized
+   * using {@link #fromByteBuffer(ByteBuffer)}.
+   *
+   * @return a byte buffer containing the serialized bounding box
+   */
+  public ByteBuffer toByteBuffer() {
+    ByteBuffer minBuffer = min.toByteBuffer();
+    ByteBuffer maxBuffer = max.toByteBuffer();
+
+    int totalSize = Integer.BYTES + minBuffer.remaining() + Integer.BYTES + maxBuffer.remaining();
+    ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    buffer.putInt(minBuffer.remaining());
+    buffer.put(minBuffer);
+    buffer.putInt(maxBuffer.remaining());
+    buffer.put(maxBuffer);
+    buffer.flip();
+    return buffer;
+  }
+
   @Override
   public boolean equals(Object other) {
     if (this == other) {
@@ -98,16 +150,6 @@ public class BoundingBox implements Serializable, Comparable<BoundingBox> {
 
   @Override
   public String toString() {
-    return "BoundingBox{min=" + min.simpleString() + ", max=" + max.simpleString() + '}';
-  }
-
-  @Override
-  public int compareTo(BoundingBox other) {
-    int minComparison = min.compareTo(other.min);
-    if (minComparison != 0) {
-      return minComparison;
-    }
-
-    return max.compareTo(other.max);
+    return "BoundingBox{min={" + min.simpleString() + "}, max={" + max.simpleString() + "}}";
   }
 }

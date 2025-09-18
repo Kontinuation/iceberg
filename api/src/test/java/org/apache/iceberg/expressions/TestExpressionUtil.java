@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -1336,13 +1337,13 @@ public class TestExpressionUtil {
 
     UnboundPredicate<ByteBuffer> geoPredicate =
         Expressions.geospatialPredicate(operation, columnName, bbox);
-    Expression predicateSanitized =
-        Expressions.geospatialPredicate(operation, columnName, BoundingBox.empty());
+    Expression predicateSanitized = Expressions.predicate(operation, columnName, "(bounding-box)");
     assertEquals(predicateSanitized, ExpressionUtil.sanitize(geoPredicate));
     assertEquals(predicateSanitized, ExpressionUtil.sanitize(geoStruct, geoPredicate, true));
 
     String opString = operation.name();
-    String expectedSanitizedString = columnName + " " + opString + " WITH (bounding-box)";
+    String expectedSanitizedString =
+        opString.toLowerCase(Locale.ROOT) + "(" + columnName + ", (bounding-box))";
 
     assertThat(ExpressionUtil.toSanitizedString(geoPredicate))
         .as("Sanitized string should be identical for geospatial predicates")

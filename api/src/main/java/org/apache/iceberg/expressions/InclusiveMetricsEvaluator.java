@@ -474,7 +474,7 @@ public class InclusiveMetricsEvaluator {
     }
 
     @Override
-    public <T> Boolean stIntersects(Bound<T> term, Literal<BoundingBox> lit) {
+    public <T> Boolean stIntersects(Bound<T> term, Literal<ByteBuffer> lit) {
       T lower = lowerBound(term);
       T upper = upperBound(term);
 
@@ -484,7 +484,7 @@ public class InclusiveMetricsEvaluator {
 
       if (lit.value() != null && lower instanceof ByteBuffer && upper instanceof ByteBuffer) {
         BoundingBox dataBox = BoundingBox.fromByteBuffers((ByteBuffer) lower, (ByteBuffer) upper);
-        BoundingBox queryBox = lit.value();
+        BoundingBox queryBox = BoundingBox.fromByteBuffer(lit.value());
 
         // If the data box and query box doesn't intersect, no records can match
         GeospatialPredicateEvaluators.GeospatialPredicateEvaluator evaluator =
@@ -498,7 +498,7 @@ public class InclusiveMetricsEvaluator {
     }
 
     @Override
-    public <T> Boolean stDisjoint(Bound<T> term, Literal<BoundingBox> lit) {
+    public <T> Boolean stDisjoint(Bound<T> term, Literal<ByteBuffer> lit) {
       return ROWS_MIGHT_MATCH;
     }
 

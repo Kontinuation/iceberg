@@ -105,37 +105,6 @@ public class TestGeospatialBound {
   }
 
   @Test
-  public void testCompareTo() {
-    GeospatialBound xy1 = GeospatialBound.createXY(1.0, 2.0);
-    GeospatialBound xy2 = GeospatialBound.createXY(1.0, 2.0);
-    GeospatialBound xy3 = GeospatialBound.createXY(1.0, 3.0);
-    assertThat(xy1.compareTo(xy2)).isEqualTo(0);
-    assertThat(xy1.compareTo(xy3)).isLessThan(0);
-    assertThat(xy3.compareTo(xy1)).isGreaterThan(0);
-
-    GeospatialBound xyz1 = GeospatialBound.createXYZ(1.0, 2.0, 3.0);
-    GeospatialBound xyz2 = GeospatialBound.createXYZ(1.0, 2.0, 3.0);
-    GeospatialBound xyz3 = GeospatialBound.createXYZ(1.0, 2.0, 4.0);
-    assertThat(xyz1.compareTo(xyz2)).isEqualTo(0);
-    assertThat(xyz1.compareTo(xyz3)).isLessThan(0);
-    assertThat(xyz3.compareTo(xyz1)).isGreaterThan(0);
-
-    GeospatialBound xym1 = GeospatialBound.createXYM(1.0, 2.0, 4.0);
-    GeospatialBound xym2 = GeospatialBound.createXYM(1.0, 2.0, 4.0);
-    GeospatialBound xym3 = GeospatialBound.createXYM(1.0, 2.0, 5.0);
-    assertThat(xym1.compareTo(xym2)).isEqualTo(0);
-    assertThat(xym1.compareTo(xym3)).isLessThan(0);
-    assertThat(xym3.compareTo(xym1)).isGreaterThan(0);
-
-    GeospatialBound xyzm1 = GeospatialBound.createXYZM(1.0, 2.0, 3.0, 4.0);
-    GeospatialBound xyzm2 = GeospatialBound.createXYZM(1.0, 2.0, 3.0, 4.0);
-    GeospatialBound xyzm3 = GeospatialBound.createXYZM(1.0, 2.0, 3.0, 5.0);
-    assertThat(xyzm1.compareTo(xyzm2)).isEqualTo(0);
-    assertThat(xyzm1.compareTo(xyzm3)).isLessThan(0);
-    assertThat(xyzm3.compareTo(xyzm1)).isGreaterThan(0);
-  }
-
-  @Test
   public void testToString() {
     GeospatialBound xy = GeospatialBound.createXY(1.0, 2.0);
     assertThat(xy.toString()).isEqualTo("GeospatialBound(x=1.0, y=2.0)");

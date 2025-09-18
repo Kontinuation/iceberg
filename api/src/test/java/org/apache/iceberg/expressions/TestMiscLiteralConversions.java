@@ -50,7 +50,17 @@ public class TestMiscLiteralConversions {
             Pair.of(Literal.of("abc"), Types.StringType.get()),
             Pair.of(Literal.of(UUID.randomUUID()), Types.UUIDType.get()),
             Pair.of(Literal.of(new byte[] {0, 1, 2}), Types.FixedType.ofLength(3)),
-            Pair.of(Literal.of(ByteBuffer.wrap(new byte[] {0, 1, 2})), Types.BinaryType.get()));
+            Pair.of(Literal.of(ByteBuffer.wrap(new byte[] {0, 1, 2})), Types.BinaryType.get()),
+            Pair.of(
+                Literal.of(
+                    new BoundingBox(
+                        GeospatialBound.createXY(0, 1), GeospatialBound.createXY(2, 3))),
+                Types.GeometryType.crs84()),
+            Pair.of(
+                Literal.of(
+                    new BoundingBox(
+                        GeospatialBound.createXY(0, 1), GeospatialBound.createXY(2, 3))),
+                Types.GeographyType.crs84()));
 
     for (Pair<Literal<?>, Type> pair : pairs) {
       Literal<?> lit = pair.first();
@@ -380,9 +390,7 @@ public class TestMiscLiteralConversions {
   public void testInvalidGeospatialBoundingBoxConversions() {
     GeospatialBound min = GeospatialBound.createXY(1.0, 2.0);
     GeospatialBound max = GeospatialBound.createXY(3.0, 4.0);
-    Literal<BoundingBox> geoBoundingBoxLiteral = Literal.of(new BoundingBox(min, max));
-
-    // Test that geospatial bounding box literals cannot be converted to other types
+    Literal<ByteBuffer> geoBoundingBoxLiteral = Literal.of(new BoundingBox(min, max));
     testInvalidConversions(
         geoBoundingBoxLiteral,
         Types.BooleanType.get(),
@@ -396,9 +404,7 @@ public class TestMiscLiteralConversions {
         Types.StringType.get(),
         Types.UUIDType.get(),
         Types.BinaryType.get(),
-        Types.FixedType.ofLength(1),
-        Types.GeometryType.crs84(),
-        Types.GeographyType.crs84());
+        Types.FixedType.ofLength(1));
   }
 
   private void testInvalidConversions(Literal<?> lit, Type... invalidTypes) {

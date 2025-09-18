@@ -72,8 +72,8 @@ public interface Literal<T> extends Serializable {
     return new Literals.DecimalLiteral(value);
   }
 
-  static Literal<BoundingBox> of(BoundingBox value) {
-    return new Literals.GeospatialBoundingBoxLiteral(value);
+  static Literal<ByteBuffer> of(BoundingBox value) {
+    return new Literals.BoundingBoxLiteral(value);
   }
 
   /** Returns the value wrapped by this literal. */
